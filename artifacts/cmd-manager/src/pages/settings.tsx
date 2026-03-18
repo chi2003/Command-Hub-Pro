@@ -6,6 +6,7 @@ import { Download, Upload, FileJson, FileSpreadsheet, Trash2, Database } from "l
 import { useToast } from "@/hooks/use-toast";
 import Papa from "papaparse";
 import { useQueryClient } from "@tanstack/react-query";
+import { v4 as uuidv4 } from "uuid";
 
 export default function SettingsPage() {
   const { toast } = useToast();
@@ -27,15 +28,19 @@ export default function SettingsPage() {
     toast({ title: "JSON Exported Successfully" });
   };
 
-  const handleExportCsv = () => {
+  const handleExportCommandsCsv = () => {
     const data = getStoreData();
-    // Only export commands for CSV as chains are too complex/nested
     if (data.commands.length === 0) {
       toast({ variant: "destructive", title: "No commands to export" });
       return;
     }
-    
-    const csv = Papa.unparse(data.commands);
+    const csv = Papa.unparse(data.commands.map(c => ({
+      id: c.id,
+      name: c.name,
+      description: c.description,
+      command: c.command,
+      requiresAdmin: c.requiresAdmin,
+    })));
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -45,7 +50,37 @@ export default function SettingsPage() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast({ title: "CSV Exported Successfully", description: "Only individual commands were exported." });
+    toast({ title: "Commands CSV Exported" });
+  };
+
+  const handleExportChainsCsv = () => {
+    const data = getStoreData();
+    if (data.chains.length === 0) {
+      toast({ variant: "destructive", title: "No chains to export" });
+      return;
+    }
+    // Flatten: one row per step, chain-level fields repeated
+    const rows: Record<string, string>[] = [];
+    for (const chain of data.chains) {
+      if (chain.steps.length === 0) {
+        rows.push({ chain_id: chain.id, chain_name: chain.name, chain_description: chain.description, chain_suffix: chain.suffix, step_index: "0", step_prefix: "", step_command: "" });
+      } else {
+        chain.steps.forEach((step, i) => {
+          rows.push({ chain_id: chain.id, chain_name: chain.name, chain_description: chain.description, chain_suffix: chain.suffix, step_index: String(i), step_prefix: step.prefix, step_command: step.command });
+        });
+      }
+    }
+    const csv = Papa.unparse(rows);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `cmd-manager-chains-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast({ title: "Chains CSV Exported", description: "Each row represents one step." });
   };
 
   const handleImportClick = () => {
@@ -73,24 +108,46 @@ export default function SettingsPage() {
             throw new Error("Invalid JSON structure");
           }
         } else if (file.name.endsWith('.csv')) {
-           Papa.parse(content, {
+          Papa.parse(content, {
             header: true,
             complete: async (results) => {
+              const rows = results.data as Record<string, string>[];
               const currentData = getStoreData();
-              // Basic validation - assume valid if has required fields
-              const newCommands = results.data.filter((item: any) => item.name && item.command) as any[];
-              
-              const mergedData = {
-                ...currentData,
-                commands: [...currentData.commands, ...newCommands]
-              };
-              setStoreData(mergedData);
-              await queryClient.invalidateQueries();
-              toast({ title: "CSV Import Successful", description: `Added ${newCommands.length} commands.` });
+
+              // Detect if this is a chains CSV (has chain_id column) or commands CSV
+              if (rows.length > 0 && 'chain_id' in rows[0]) {
+                // Rebuild chains from flattened rows grouped by chain_id
+                const chainMap = new Map<string, { id: string; name: string; description: string; suffix: string; steps: { id: string; prefix: string; command: string }[] }>();
+                for (const row of rows) {
+                  if (!row.chain_id) continue;
+                  if (!chainMap.has(row.chain_id)) {
+                    chainMap.set(row.chain_id, { id: row.chain_id, name: row.chain_name || "", description: row.chain_description || "", suffix: row.chain_suffix || "", steps: [] });
+                  }
+                  if (row.step_command) {
+                    chainMap.get(row.chain_id)!.steps.push({ id: uuidv4(), prefix: row.step_prefix || "", command: row.step_command });
+                  }
+                }
+                const newChains = Array.from(chainMap.values());
+                const mergedData = { ...currentData, chains: [...currentData.chains, ...newChains] };
+                setStoreData(mergedData);
+                await queryClient.invalidateQueries();
+                toast({ title: "Chains CSV Imported", description: `Added ${newChains.length} chain(s).` });
+              } else {
+                // Commands CSV
+                const newCommands = rows.filter((item) => item.name && item.command).map((item) => ({
+                  id: item.id || uuidv4(),
+                  name: item.name,
+                  description: item.description || "",
+                  command: item.command,
+                  requiresAdmin: item.requiresAdmin === "true" || item.requiresAdmin === "1",
+                }));
+                const mergedData = { ...currentData, commands: [...currentData.commands, ...newCommands] };
+                setStoreData(mergedData);
+                await queryClient.invalidateQueries();
+                toast({ title: "Commands CSV Imported", description: `Added ${newCommands.length} command(s).` });
+              }
             },
-            error: (error) => {
-              throw error;
-            }
+            error: (error) => { throw error; }
           });
         }
       } catch (err) {
@@ -144,11 +201,18 @@ export default function SettingsPage() {
                   <span className="text-[10px] text-muted-foreground">Full library (Commands & Chains)</span>
                 </div>
               </Button>
-              <Button onClick={handleExportCsv} variant="outline" className="w-full justify-start h-12 rounded-xl text-left border-border/50 hover:bg-secondary hover:text-foreground">
+              <Button onClick={handleExportCommandsCsv} variant="outline" className="w-full justify-start h-12 rounded-xl text-left border-border/50 hover:bg-secondary hover:text-foreground">
                 <FileSpreadsheet className="w-5 h-5 mr-3 text-green-500" />
                 <div className="flex flex-col items-start leading-tight">
                   <span>Export Commands to CSV</span>
                   <span className="text-[10px] text-muted-foreground">Spreadsheet format (Commands only)</span>
+                </div>
+              </Button>
+              <Button onClick={handleExportChainsCsv} variant="outline" className="w-full justify-start h-12 rounded-xl text-left border-border/50 hover:bg-secondary hover:text-foreground">
+                <FileSpreadsheet className="w-5 h-5 mr-3 text-blue-400" />
+                <div className="flex flex-col items-start leading-tight">
+                  <span>Export Chains to CSV</span>
+                  <span className="text-[10px] text-muted-foreground">Spreadsheet format (one row per step)</span>
                 </div>
               </Button>
             </div>
@@ -173,7 +237,7 @@ export default function SettingsPage() {
                 {isImporting ? "Importing..." : "Select File (JSON/CSV)"}
               </Button>
               <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
-                Importing a JSON file will overwrite your current library. Importing a CSV will append commands to your existing library.
+                JSON import overwrites your entire library. CSV import auto-detects type (Commands or Chains) and appends to your existing data.
               </p>
             </div>
 
