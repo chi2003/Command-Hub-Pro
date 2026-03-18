@@ -6,9 +6,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { CommandChain } from "@/lib/store";
-import { Layers, Copy, Check, Edit2, Play, ListOrdered } from "lucide-react";
+import { Layers, Copy, Check, Edit2, Play, ListOrdered, Pencil } from "lucide-react";
 import { useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { CategoryBadge } from "@/components/category-badge";
 
 type ChainDetailDialogProps = {
   chain: CommandChain | null;
@@ -56,9 +57,16 @@ export function ChainDetailDialog({ chain, open, onOpenChange, onEdit, onRun }: 
             <div className="flex-1 min-w-0">
               <DialogTitle className="text-xl leading-tight">{chain.name}</DialogTitle>
               <p className="text-sm text-muted-foreground mt-0.5">{chain.description}</p>
-              <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1"><ListOrdered className="w-3 h-3" /> {chain.steps.length} steps</span>
-                {chain.suffix && <span>• Suffix attached</span>}
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                <CategoryBadge category={chain.category} />
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <ListOrdered className="w-3 h-3" /> {chain.steps.length} steps
+                </span>
+                {chain.suffix && (
+                  <span className="text-xs text-amber-400/70 flex items-center gap-1">
+                    <Pencil className="w-3 h-3" /> Manual suffix
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -82,8 +90,16 @@ export function ChainDetailDialog({ chain, open, onOpenChange, onEdit, onRun }: 
 
             {chain.suffix && (
               <div className="pt-3 border-t border-border/30 space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Fixed Suffix</p>
-                <CopyableCommand command={chain.suffix} />
+                <div className="flex items-center gap-2">
+                  <Pencil className="w-3.5 h-3.5 text-amber-400" />
+                  <p className="text-xs font-semibold text-amber-400">Paste &amp; Complete Manually</p>
+                </div>
+                <div className="rounded-lg border border-amber-500/25 bg-amber-500/5 overflow-hidden">
+                  <CopyableCommand command={chain.suffix} />
+                  <p className="text-[11px] text-amber-400/60 px-3 pb-2.5 leading-relaxed">
+                    Paste this into your terminal after the steps complete. Fill in any placeholders before executing.
+                  </p>
+                </div>
               </div>
             )}
           </div>
@@ -91,19 +107,12 @@ export function ChainDetailDialog({ chain, open, onOpenChange, onEdit, onRun }: 
 
         <div className="px-6 pb-6 pt-4 border-t border-border/30 flex items-center justify-end gap-3 shrink-0">
           {onEdit && (
-            <Button
-              variant="outline"
-              onClick={() => { onOpenChange(false); onEdit(chain); }}
-              className="rounded-xl border-border/50"
-            >
+            <Button variant="outline" onClick={() => { onOpenChange(false); onEdit(chain); }} className="rounded-xl border-border/50">
               <Edit2 className="w-4 h-4 mr-2" /> Edit
             </Button>
           )}
           {onRun && (
-            <Button
-              onClick={() => { onOpenChange(false); onRun(chain); }}
-              className="rounded-xl bg-accent text-accent-foreground shadow-lg shadow-accent/20 hover-elevate"
-            >
+            <Button onClick={() => { onOpenChange(false); onRun(chain); }} className="rounded-xl bg-accent text-accent-foreground shadow-lg shadow-accent/20 hover-elevate">
               <Play className="w-4 h-4 mr-2" /> Run Workflow
             </Button>
           )}

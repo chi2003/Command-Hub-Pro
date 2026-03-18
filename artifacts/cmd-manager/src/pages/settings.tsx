@@ -76,6 +76,13 @@ export default function SettingsPage() {
     toast({ title: "Registry CSV Exported" });
   };
 
+  const handleExportRegistryJson = () => {
+    const data = getStoreData();
+    if (!data.registryCommands?.length) { toast({ variant: "destructive", title: "No registry commands to export" }); return; }
+    downloadBlob(new Blob([JSON.stringify(data.registryCommands, null, 2)], { type: "application/json" }), `cmd-manager-registry-${date}.json`);
+    toast({ title: "Registry JSON Exported" });
+  };
+
   const parseCsvRows = (rows: Record<string, string>[]) => {
     if (rows.length > 0 && 'chain_id' in rows[0]) {
       const chainMap = new Map<string, { id: string; name: string; description: string; suffix: string; steps: { id: string; prefix: string; command: string }[] }>();
@@ -283,6 +290,13 @@ export default function SettingsPage() {
                 <div className="flex flex-col items-start leading-tight">
                   <span>Export Registry to CSV</span>
                   <span className="text-[10px] text-muted-foreground">All registry commands as spreadsheet</span>
+                </div>
+              </Button>
+              <Button onClick={handleExportRegistryJson} variant="outline" className="w-full justify-start h-12 rounded-xl text-left border-border/50 hover:bg-secondary hover:text-foreground">
+                <FileJson className="w-5 h-5 mr-3 text-orange-400" />
+                <div className="flex flex-col items-start leading-tight">
+                  <span>Export Registry to JSON</span>
+                  <span className="text-[10px] text-muted-foreground">All registry commands as JSON array</span>
                 </div>
               </Button>
             </div>

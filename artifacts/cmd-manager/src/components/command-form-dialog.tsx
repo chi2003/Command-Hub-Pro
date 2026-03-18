@@ -18,11 +18,19 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Command } from "@/lib/store";
+import { CATEGORIES } from "@/lib/categories";
 import { useCreateCommand, useUpdateCommand } from "@/hooks/use-commands";
 import { TerminalSquare, Save, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -32,6 +40,7 @@ const formSchema = z.object({
   description: z.string().min(5, "Description must be at least 5 characters."),
   command: z.string().min(2, "Command is required."),
   requiresAdmin: z.boolean().default(false),
+  category: z.string().default("system"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -48,7 +57,7 @@ export function CommandFormDialog({ command, open, onOpenChange, onCreate, onUpd
   const isEditing = !!command;
   const { toast } = useToast();
   const [isPendingOverride, setIsPendingOverride] = useState(false);
-  
+
   const createMutation = useCreateCommand();
   const updateMutation = useUpdateCommand();
   const isPending = (onCreate || onUpdate) ? isPendingOverride : (createMutation.isPending || updateMutation.isPending);
@@ -60,10 +69,10 @@ export function CommandFormDialog({ command, open, onOpenChange, onCreate, onUpd
       description: "",
       command: "",
       requiresAdmin: false,
+      category: "system",
     },
   });
 
-  // Reset form when dialog opens/closes or command changes
   useEffect(() => {
     if (open) {
       if (command) {
@@ -72,6 +81,7 @@ export function CommandFormDialog({ command, open, onOpenChange, onCreate, onUpd
           description: command.description,
           command: command.command,
           requiresAdmin: command.requiresAdmin,
+          category: command.category || "system",
         });
       } else {
         form.reset({
@@ -79,6 +89,7 @@ export function CommandFormDialog({ command, open, onOpenChange, onCreate, onUpd
           description: "",
           command: "",
           requiresAdmin: false,
+          category: "system",
         });
       }
     }
@@ -133,6 +144,31 @@ export function CommandFormDialog({ command, open, onOpenChange, onCreate, onUpd
                   <FormControl>
                     <Input placeholder="e.g. Flush DNS" className="rounded-xl bg-background/50 focus:bg-background" {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="category"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Category</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="rounded-xl bg-background/50">
+                        <SelectValue placeholder="Select a category" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="glass rounded-xl border-border/50">
+                      {CATEGORIES.map(cat => (
+                        <SelectItem key={cat} value={cat} className="rounded-lg cursor-pointer capitalize">
+                          {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

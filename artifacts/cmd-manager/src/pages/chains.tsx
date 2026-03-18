@@ -4,15 +4,7 @@ import { CommandChain } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
-  Plus, 
-  Search, 
-  Layers, 
-  MoreVertical, 
-  Edit2, 
-  Trash2, 
-  Play, 
-  Loader2,
-  ListOrdered
+  Plus, Search, Layers, MoreVertical, Edit2, Trash2, Play, Loader2, ListOrdered
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -24,36 +16,36 @@ import {
 import { ChainFormDialog } from "@/components/chain-form-dialog";
 import { RunChainDialog } from "@/components/run-chain-dialog";
 import { ChainDetailDialog } from "@/components/chain-detail-dialog";
+import { CategoryBadge } from "@/components/category-badge";
+import { CategoryFilter } from "@/components/category-filter";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function ChainsPage() {
   const { data: chains = [], isLoading } = useChains();
   const deleteMutation = useDeleteChain();
   const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingChain, setEditingChain] = useState<CommandChain | null>(null);
-
   const [runOpen, setRunOpen] = useState(false);
   const [runningChain, setRunningChain] = useState<CommandChain | null>(null);
-
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailChain, setDetailChain] = useState<CommandChain | null>(null);
 
-  const filteredChains = chains.filter(c => 
-    c.name.toLowerCase().includes(search.toLowerCase()) || 
-    c.description.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredChains = chains.filter(c => {
+    const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase()) || 
+                          c.description.toLowerCase().includes(search.toLowerCase());
+    const matchesCat = categoryFilter === "all" || c.category === categoryFilter;
+    return matchesSearch && matchesCat;
+  });
 
   const handleAdd = () => { setEditingChain(null); setFormOpen(true); };
   const handleEdit = (chain: CommandChain) => { setEditingChain(chain); setFormOpen(true); };
   const handleRun = (chain: CommandChain) => { setRunningChain(chain); setRunOpen(true); };
   const handleDetail = (chain: CommandChain) => { setDetailChain(chain); setDetailOpen(true); };
-
   const handleDelete = async (id: string) => {
-    if (window.confirm("Are you sure you want to delete this chain workflow?")) {
-      await deleteMutation.mutateAsync(id);
-    }
+    if (window.confirm("Delete this chain workflow?")) await deleteMutation.mutateAsync(id);
   };
 
   return (
@@ -63,22 +55,22 @@ export default function ChainsPage() {
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Command Chains</h1>
           <p className="text-muted-foreground mt-1">Multi-step workflows with fixed suffixes.</p>
         </div>
-        <Button 
-          onClick={handleAdd}
-          className="rounded-xl bg-accent text-accent-foreground shadow-lg shadow-accent/20 hover-elevate px-6"
-        >
+        <Button onClick={handleAdd} className="rounded-xl bg-accent text-accent-foreground shadow-lg shadow-accent/20 hover-elevate px-6">
           <Plus className="w-5 h-5 mr-2" /> New Chain
         </Button>
       </div>
 
-      <div className="relative mb-6">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-        <Input 
-          placeholder="Search chains..." 
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="pl-11 rounded-xl bg-card border-border/50 shadow-sm h-12 text-base focus-visible:ring-accent/20 focus-visible:border-accent"
-        />
+      <div className="flex gap-3 mb-6">
+        <div className="relative flex-1">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+          <Input 
+            placeholder="Search chains..." 
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="pl-11 rounded-xl bg-card border-border/50 shadow-sm h-12 text-base focus-visible:ring-accent/20"
+          />
+        </div>
+        <CategoryFilter value={categoryFilter} onChange={setCategoryFilter} />
       </div>
 
       {isLoading ? (
@@ -92,9 +84,9 @@ export default function ChainsPage() {
           </div>
           <h3 className="text-lg font-semibold">No chains found</h3>
           <p className="text-muted-foreground max-w-sm mt-1 mb-4">
-            {search ? "No command chains match your search." : "Create workflows to automate multiple commands in sequence."}
+            {search || categoryFilter !== "all" ? "Try adjusting your search or category filter." : "Create workflows to automate multiple commands in sequence."}
           </p>
-          {!search && (
+          {!search && categoryFilter === "all" && (
             <Button variant="outline" onClick={handleAdd} className="rounded-xl border-accent text-accent hover:bg-accent hover:text-accent-foreground">
               Add Command Chain
             </Button>
@@ -125,7 +117,7 @@ export default function ChainsPage() {
                       <h3 className="font-semibold text-lg line-clamp-1">{chain.name}</h3>
                       <div className="flex items-center text-xs text-muted-foreground mt-0.5 gap-2">
                         <span className="flex items-center gap-1"><ListOrdered className="w-3 h-3" /> {chain.steps.length} Steps</span>
-                        {chain.suffix && <span>• Suffix attached</span>}
+                        {chain.suffix && <span>• Manual suffix</span>}
                       </div>
                     </div>
                   </div>
@@ -147,14 +139,16 @@ export default function ChainsPage() {
                   </DropdownMenu>
                 </div>
 
-                <p className="text-sm text-muted-foreground mb-6 line-clamp-2 relative z-10 pl-[56px]">
+                <p className="text-sm text-muted-foreground mb-5 line-clamp-2 relative z-10 pl-[56px]">
                   {chain.description}
                 </p>
 
-                <div className="flex justify-end pt-4 border-t border-border/30 mt-auto relative z-10">
+                <div className="flex items-center justify-between pt-4 border-t border-border/30 mt-auto relative z-10 gap-3">
+                  <CategoryBadge category={chain.category} />
                   <Button 
                     onClick={e => { e.stopPropagation(); handleRun(chain); }}
-                    className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 transition-colors w-full sm:w-auto shadow-sm shadow-accent/20 hover-elevate"
+                    className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 transition-colors shadow-sm shadow-accent/20 hover-elevate"
+                    size="sm"
                   >
                     <Play className="w-4 h-4 mr-2" /> Run Workflow
                   </Button>
@@ -165,25 +159,9 @@ export default function ChainsPage() {
         </div>
       )}
 
-      <ChainFormDialog 
-        open={formOpen} 
-        onOpenChange={setFormOpen} 
-        chain={editingChain} 
-      />
-
-      <RunChainDialog 
-        open={runOpen} 
-        onOpenChange={setRunOpen} 
-        chain={runningChain} 
-      />
-
-      <ChainDetailDialog
-        open={detailOpen}
-        onOpenChange={setDetailOpen}
-        chain={detailChain}
-        onEdit={handleEdit}
-        onRun={handleRun}
-      />
+      <ChainFormDialog open={formOpen} onOpenChange={setFormOpen} chain={editingChain} />
+      <RunChainDialog open={runOpen} onOpenChange={setRunOpen} chain={runningChain} />
+      <ChainDetailDialog open={detailOpen} onOpenChange={setDetailOpen} chain={detailChain} onEdit={handleEdit} onRun={handleRun} />
     </div>
   );
 }

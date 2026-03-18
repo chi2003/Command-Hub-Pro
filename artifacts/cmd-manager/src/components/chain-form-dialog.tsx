@@ -18,12 +18,20 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { CommandChain } from "@/lib/store";
+import { CATEGORIES } from "@/lib/categories";
 import { useCreateChain, useUpdateChain } from "@/hooks/use-chains";
-import { Layers, Save, Loader2, Plus, Trash2, GripVertical } from "lucide-react";
+import { Layers, Save, Loader2, Plus, Trash2, GripVertical, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "./ui/scroll-area";
 import { v4 as uuidv4 } from "uuid";
@@ -39,6 +47,7 @@ const formSchema = z.object({
   description: z.string().min(5, "Description must be at least 5 characters."),
   steps: z.array(stepSchema).min(1, "At least one step is required."),
   suffix: z.string().optional().default(""),
+  category: z.string().default("system"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -64,10 +73,11 @@ export function ChainFormDialog({ chain, open, onOpenChange }: ChainFormDialogPr
       description: "",
       steps: [{ prefix: "", command: "" }],
       suffix: "",
+      category: "system",
     },
   });
 
-  const { fields, append, remove, move } = useFieldArray({
+  const { fields, append, remove } = useFieldArray({
     name: "steps",
     control: form.control,
   });
@@ -80,6 +90,7 @@ export function ChainFormDialog({ chain, open, onOpenChange }: ChainFormDialogPr
           description: chain.description,
           steps: chain.steps.length > 0 ? chain.steps : [{ prefix: "", command: "" }],
           suffix: chain.suffix || "",
+          category: chain.category || "system",
         });
       } else {
         form.reset({
@@ -87,6 +98,7 @@ export function ChainFormDialog({ chain, open, onOpenChange }: ChainFormDialogPr
           description: "",
           steps: [{ prefix: "", command: "" }],
           suffix: "",
+          category: "system",
         });
       }
     }
@@ -156,6 +168,30 @@ export function ChainFormDialog({ chain, open, onOpenChange }: ChainFormDialogPr
                       </FormItem>
                     )}
                   />
+                  <FormField
+                    control={form.control}
+                    name="category"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Category</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="rounded-xl bg-background/50">
+                              <SelectValue placeholder="Select a category" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="glass rounded-xl border-border/50">
+                            {CATEGORIES.map(cat => (
+                              <SelectItem key={cat} value={cat} className="rounded-lg cursor-pointer capitalize">
+                                {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
 
                 <div className="space-y-4">
@@ -179,7 +215,7 @@ export function ChainFormDialog({ chain, open, onOpenChange }: ChainFormDialogPr
                     {fields.map((field, index) => (
                       <div key={field.id} className="group relative flex gap-3 p-4 rounded-xl border border-border/50 bg-card hover:border-primary/30 transition-colors shadow-sm">
                         
-                        <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground cursor-grab active:cursor-grabbing hover:text-foreground transition-colors pt-6">
+                        <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground pt-6">
                            <GripVertical className="w-5 h-5 opacity-50 group-hover:opacity-100" />
                            <span className="text-xs font-bold w-5 text-center">{index + 1}</span>
                         </div>
@@ -241,12 +277,17 @@ export function ChainFormDialog({ chain, open, onOpenChange }: ChainFormDialogPr
                     name="suffix"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Fixed Suffix (Optional)</FormLabel>
-                        <FormDescription>Command to append at the very end of the execution chain.</FormDescription>
+                        <FormLabel className="flex items-center gap-2">
+                          <Pencil className="w-3.5 h-3.5 text-amber-400" />
+                          Manual Input Suffix (Optional)
+                        </FormLabel>
+                        <FormDescription>
+                          Appended at the bottom after all steps. This is shown as a <strong>template to paste and complete manually</strong> — it is not executed automatically. Use placeholders like <code className="text-xs bg-secondary px-1 rounded">{"{ShadowID}"}</code> for values the user fills in from previous step output.
+                        </FormDescription>
                         <FormControl>
                           <Textarea 
-                            placeholder="e.g. pause" 
-                            className="rounded-xl resize-none bg-secondary/30 h-16 font-mono text-sm" 
+                            placeholder="e.g. vssadmin delete shadows /Shadow={ShadowID}" 
+                            className="rounded-xl resize-none bg-amber-500/5 border-amber-500/20 focus:border-amber-400/40 h-16 font-mono text-sm mt-2" 
                             {...field} 
                           />
                         </FormControl>
