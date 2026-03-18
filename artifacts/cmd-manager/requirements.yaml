@@ -1,0 +1,13 @@
+packages:
+  "framer-motion": "Smooth page transitions and dialog animations for Windows 11 feel"
+  "uuid": "Generate unique IDs for local storage items"
+  "@types/uuid": "Types for uuid"
+  "papaparse": "CSV import/export functionality"
+  "@types/papaparse": "Types for papaparse"
+  "react-hook-form": "Form state management"
+  "@hookform/resolvers": "Zod resolver for react-hook-form validation"
+
+notes:
+  - Application is completely frontend-driven using localStorage for persistence
+  - Windows 11 design language applied using Tailwind v4, backdrop blurs, and specific spacing
+  - Mocked async delays in data hooks to simulate real API interactions and allow loading states
