@@ -40,15 +40,18 @@ type CommandFormDialogProps = {
   command?: Command | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onCreate?: (data: Omit<Command, "id">) => Promise<Command>;
+  onUpdate?: (data: Command) => Promise<Command>;
 };
 
-export function CommandFormDialog({ command, open, onOpenChange }: CommandFormDialogProps) {
+export function CommandFormDialog({ command, open, onOpenChange, onCreate, onUpdate }: CommandFormDialogProps) {
   const isEditing = !!command;
   const { toast } = useToast();
+  const [isPendingOverride, setIsPendingOverride] = useState(false);
   
   const createMutation = useCreateCommand();
   const updateMutation = useUpdateCommand();
-  const isPending = createMutation.isPending || updateMutation.isPending;
+  const isPending = (onCreate || onUpdate) ? isPendingOverride : (createMutation.isPending || updateMutation.isPending);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -84,15 +87,21 @@ export function CommandFormDialog({ command, open, onOpenChange }: CommandFormDi
   const onSubmit = async (values: FormValues) => {
     try {
       if (isEditing && command) {
-        await updateMutation.mutateAsync({ ...values, id: command.id });
+        const updateFn = onUpdate ?? updateMutation.mutateAsync.bind(updateMutation);
+        if (onUpdate) setIsPendingOverride(true);
+        await updateFn({ ...values, id: command.id });
         toast({ title: "Command updated successfully" });
       } else {
-        await createMutation.mutateAsync(values);
+        const createFn = onCreate ?? createMutation.mutateAsync.bind(createMutation);
+        if (onCreate) setIsPendingOverride(true);
+        await createFn(values);
         toast({ title: "Command created successfully" });
       }
       onOpenChange(false);
     } catch (error) {
       toast({ variant: "destructive", title: "Error saving command" });
+    } finally {
+      setIsPendingOverride(false);
     }
   };
 

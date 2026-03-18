@@ -3,7 +3,6 @@ import { useChains, useDeleteChain } from "@/hooks/use-chains";
 import { CommandChain } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { 
   Plus, 
   Search, 
@@ -24,6 +23,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ChainFormDialog } from "@/components/chain-form-dialog";
 import { RunChainDialog } from "@/components/run-chain-dialog";
+import { ChainDetailDialog } from "@/components/chain-detail-dialog";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function ChainsPage() {
@@ -37,25 +37,18 @@ export default function ChainsPage() {
   const [runOpen, setRunOpen] = useState(false);
   const [runningChain, setRunningChain] = useState<CommandChain | null>(null);
 
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailChain, setDetailChain] = useState<CommandChain | null>(null);
+
   const filteredChains = chains.filter(c => 
     c.name.toLowerCase().includes(search.toLowerCase()) || 
     c.description.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleAdd = () => {
-    setEditingChain(null);
-    setFormOpen(true);
-  };
-
-  const handleEdit = (chain: CommandChain) => {
-    setEditingChain(chain);
-    setFormOpen(true);
-  };
-
-  const handleRun = (chain: CommandChain) => {
-    setRunningChain(chain);
-    setRunOpen(true);
-  };
+  const handleAdd = () => { setEditingChain(null); setFormOpen(true); };
+  const handleEdit = (chain: CommandChain) => { setEditingChain(chain); setFormOpen(true); };
+  const handleRun = (chain: CommandChain) => { setRunningChain(chain); setRunOpen(true); };
+  const handleDetail = (chain: CommandChain) => { setDetailChain(chain); setDetailOpen(true); };
 
   const handleDelete = async (id: string) => {
     if (window.confirm("Are you sure you want to delete this chain workflow?")) {
@@ -118,7 +111,8 @@ export default function ChainsPage() {
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.2 }}
                 key={chain.id}
-                className="group bg-card rounded-2xl p-6 border border-border/50 shadow-sm hover:shadow-md hover:border-accent/40 transition-all duration-300 flex flex-col relative overflow-hidden"
+                onClick={() => handleDetail(chain)}
+                className="group bg-card rounded-2xl p-6 border border-border/50 shadow-sm hover:shadow-md hover:border-accent/40 transition-all duration-300 flex flex-col relative overflow-hidden cursor-pointer"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
                 
@@ -136,17 +130,17 @@ export default function ChainsPage() {
                     </div>
                   </div>
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
+                    <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}>
                       <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg -mr-2 text-muted-foreground hover:text-foreground">
                         <MoreVertical className="w-4 h-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-48 glass rounded-xl border-border/50">
-                      <DropdownMenuItem onClick={() => handleEdit(chain)} className="rounded-lg m-1 cursor-pointer">
+                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(chain); }} className="rounded-lg m-1 cursor-pointer">
                         <Edit2 className="w-4 h-4 mr-2" /> Edit
                       </DropdownMenuItem>
                       <DropdownMenuSeparator className="bg-border/50 mx-2" />
-                      <DropdownMenuItem onClick={() => handleDelete(chain.id)} className="rounded-lg m-1 text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer">
+                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDelete(chain.id); }} className="rounded-lg m-1 text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer">
                         <Trash2 className="w-4 h-4 mr-2" /> Delete
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -159,7 +153,7 @@ export default function ChainsPage() {
 
                 <div className="flex justify-end pt-4 border-t border-border/30 mt-auto relative z-10">
                   <Button 
-                    onClick={() => handleRun(chain)}
+                    onClick={e => { e.stopPropagation(); handleRun(chain); }}
                     className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 transition-colors w-full sm:w-auto shadow-sm shadow-accent/20 hover-elevate"
                   >
                     <Play className="w-4 h-4 mr-2" /> Run Workflow
@@ -181,6 +175,14 @@ export default function ChainsPage() {
         open={runOpen} 
         onOpenChange={setRunOpen} 
         chain={runningChain} 
+      />
+
+      <ChainDetailDialog
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        chain={detailChain}
+        onEdit={handleEdit}
+        onRun={handleRun}
       />
     </div>
   );

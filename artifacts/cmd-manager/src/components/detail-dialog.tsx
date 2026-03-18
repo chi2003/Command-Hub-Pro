@@ -1,0 +1,104 @@
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Command } from "@/lib/store";
+import { Terminal, ShieldAlert, Copy, Check, Edit2, Play } from "lucide-react";
+import { useState } from "react";
+
+type DetailDialogProps = {
+  command: Command | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onEdit?: (cmd: Command) => void;
+  onRun?: (cmd: Command) => void;
+  accentColor?: string;
+};
+
+export function DetailDialog({ command, open, onOpenChange, onEdit, onRun, accentColor = "primary" }: DetailDialogProps) {
+  const [copied, setCopied] = useState(false);
+
+  if (!command) return null;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(command.command);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[560px] glass rounded-2xl border-border/50 p-0 overflow-hidden">
+        <DialogHeader className="p-6 pb-4 border-b border-border/50 bg-background/50">
+          <div className="flex items-start gap-3">
+            <div className="p-2.5 bg-secondary rounded-xl text-foreground mt-0.5">
+              <Terminal className="w-5 h-5" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <DialogTitle className="text-xl leading-tight">{command.name}</DialogTitle>
+              {command.requiresAdmin && (
+                <Badge variant="outline" className="mt-1.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 gap-1 rounded-lg px-2 py-0.5 text-xs">
+                  <ShieldAlert className="w-3 h-3" /> Requires Administrator
+                </Badge>
+              )}
+            </div>
+          </div>
+        </DialogHeader>
+
+        <div className="p-6 space-y-5">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Description</p>
+            <p className="text-sm text-foreground/90 leading-relaxed">{command.description}</p>
+          </div>
+
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Command</p>
+            <div className="relative group rounded-xl bg-[#0D1117] border border-border/30 overflow-hidden">
+              <pre className="p-4 pr-14 text-sm font-mono text-blue-300 whitespace-pre-wrap break-all leading-relaxed">
+                {command.command}
+              </pre>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={handleCopy}
+                className="absolute top-2 right-2 h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors"
+              >
+                {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+              </Button>
+            </div>
+            {command.requiresAdmin && (
+              <p className="text-xs text-amber-500/80 mt-2 flex items-center gap-1">
+                <ShieldAlert className="w-3 h-3" />
+                Run this command in an elevated (Administrator) terminal.
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="px-6 pb-6 flex items-center justify-end gap-3">
+          {onEdit && (
+            <Button
+              variant="outline"
+              onClick={() => { onOpenChange(false); onEdit(command); }}
+              className="rounded-xl border-border/50"
+            >
+              <Edit2 className="w-4 h-4 mr-2" /> Edit
+            </Button>
+          )}
+          {onRun && (
+            <Button
+              onClick={() => { onOpenChange(false); onRun(command); }}
+              className="rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover-elevate"
+            >
+              <Play className="w-4 h-4 mr-2" /> Run
+            </Button>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

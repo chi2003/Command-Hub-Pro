@@ -1,19 +1,20 @@
 import { useState } from "react";
-import { useCommands, useDeleteCommand } from "@/hooks/use-commands";
+import { useRegistryCommands, useDeleteRegistryCommand } from "@/hooks/use-registry";
 import { Command } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Plus, 
-  Search, 
-  Terminal, 
-  MoreVertical, 
-  Edit2, 
-  Trash2, 
-  Play, 
+import {
+  Plus,
+  Search,
+  DatabaseZap,
+  MoreVertical,
+  Edit2,
+  Trash2,
+  Play,
   ShieldAlert,
-  Loader2
+  Loader2,
+  AlertTriangle,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -26,10 +27,13 @@ import { CommandFormDialog } from "@/components/command-form-dialog";
 import { RunCommandDialog } from "@/components/run-command-dialog";
 import { DetailDialog } from "@/components/detail-dialog";
 import { motion, AnimatePresence } from "framer-motion";
+import { useCreateRegistryCommand, useUpdateRegistryCommand } from "@/hooks/use-registry";
 
-export default function CommandsPage() {
-  const { data: commands = [], isLoading } = useCommands();
-  const deleteMutation = useDeleteCommand();
+export default function RegistryPage() {
+  const { data: commands = [], isLoading } = useRegistryCommands();
+  const deleteMutation = useDeleteRegistryCommand();
+  const createMutation = useCreateRegistryCommand();
+  const updateMutation = useUpdateRegistryCommand();
   const [search, setSearch] = useState("");
 
   const [formOpen, setFormOpen] = useState(false);
@@ -41,8 +45,8 @@ export default function CommandsPage() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailCommand, setDetailCommand] = useState<Command | null>(null);
 
-  const filteredCommands = commands.filter(c => 
-    c.name.toLowerCase().includes(search.toLowerCase()) || 
+  const filteredCommands = commands.filter(c =>
+    c.name.toLowerCase().includes(search.toLowerCase()) ||
     c.description.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -52,48 +56,58 @@ export default function CommandsPage() {
   const handleDetail = (cmd: Command) => { setDetailCommand(cmd); setDetailOpen(true); };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm("Are you sure you want to delete this command?")) {
+    if (window.confirm("Are you sure you want to delete this registry command?")) {
       await deleteMutation.mutateAsync(id);
     }
   };
 
   return (
     <div className="h-full flex flex-col p-6 lg:p-8 max-w-7xl mx-auto w-full">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Commands</h1>
-          <p className="text-muted-foreground mt-1">Manage your individual Windows commands.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
+            <DatabaseZap className="w-8 h-8 text-orange-400" />
+            Registry Manager
+          </h1>
+          <p className="text-muted-foreground mt-1">Windows Registry commands using reg.exe.</p>
         </div>
-        <Button 
+        <Button
           onClick={handleAdd}
-          className="rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover-elevate px-6"
+          className="rounded-xl bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/20 hover-elevate px-6 shrink-0"
         >
-          <Plus className="w-5 h-5 mr-2" /> New Command
+          <Plus className="w-5 h-5 mr-2" /> New Registry Command
         </Button>
+      </div>
+
+      <div className="flex items-start gap-3 mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
+        <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+        <p className="text-sm text-amber-600 dark:text-amber-400 leading-relaxed">
+          <strong>Warning:</strong> Registry modifications can affect system stability. Always back up your registry before applying changes. Admin-flagged commands must be run in an elevated terminal.
+        </p>
       </div>
 
       <div className="relative mb-6">
         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-        <Input 
-          placeholder="Search commands..." 
+        <Input
+          placeholder="Search registry commands..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="pl-11 rounded-xl bg-card border-border/50 shadow-sm h-12 text-base focus-visible:ring-primary/20"
+          className="pl-11 rounded-xl bg-card border-border/50 shadow-sm h-12 text-base focus-visible:ring-orange-500/20"
         />
       </div>
 
       {isLoading ? (
         <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+          <Loader2 className="w-8 h-8 text-orange-400 animate-spin" />
         </div>
       ) : filteredCommands.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-card/30 rounded-2xl border border-dashed border-border/50">
           <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mb-4 text-muted-foreground">
-            <Terminal className="w-8 h-8" />
+            <DatabaseZap className="w-8 h-8" />
           </div>
-          <h3 className="text-lg font-semibold">No commands found</h3>
+          <h3 className="text-lg font-semibold">No registry commands found</h3>
           <p className="text-muted-foreground max-w-sm mt-1 mb-4">
-            {search ? "No commands match your search criteria." : "Get started by adding your first reusable command."}
+            {search ? "No commands match your search." : "Add your first registry command."}
           </p>
           {!search && (
             <Button variant="outline" onClick={handleAdd} className="rounded-xl">Add Command</Button>
@@ -111,14 +125,14 @@ export default function CommandsPage() {
                 transition={{ duration: 0.2 }}
                 key={cmd.id}
                 onClick={() => handleDetail(cmd)}
-                className="group bg-card rounded-2xl p-5 border border-border/50 shadow-sm hover:shadow-md hover:border-border transition-all duration-300 flex flex-col h-full relative overflow-hidden cursor-pointer"
+                className="group bg-card rounded-2xl p-5 border border-border/50 shadow-sm hover:shadow-md hover:border-orange-400/30 transition-all duration-300 flex flex-col h-full relative overflow-hidden cursor-pointer"
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-                
+                <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
                 <div className="flex justify-between items-start mb-3 relative z-10">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-secondary rounded-lg text-foreground">
-                      <Terminal className="w-5 h-5" />
+                    <div className="p-2 bg-orange-500/10 rounded-lg text-orange-400">
+                      <DatabaseZap className="w-5 h-5" />
                     </div>
                     <h3 className="font-semibold text-lg line-clamp-1">{cmd.name}</h3>
                   </div>
@@ -152,10 +166,10 @@ export default function CommandsPage() {
                       </Badge>
                     )}
                   </div>
-                  <Button 
-                    size="sm" 
+                  <Button
+                    size="sm"
                     onClick={e => { e.stopPropagation(); handleRun(cmd); }}
-                    className="rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-colors shrink-0"
+                    className="rounded-lg bg-orange-500/10 text-orange-400 hover:bg-orange-500 hover:text-white transition-colors shrink-0"
                   >
                     <Play className="w-4 h-4 mr-1.5" /> Run
                   </Button>
@@ -166,16 +180,18 @@ export default function CommandsPage() {
         </div>
       )}
 
-      <CommandFormDialog 
-        open={formOpen} 
-        onOpenChange={setFormOpen} 
-        command={editingCommand} 
+      <CommandFormDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        command={editingCommand}
+        onCreate={(data) => createMutation.mutateAsync(data)}
+        onUpdate={(data) => updateMutation.mutateAsync(data)}
       />
 
-      <RunCommandDialog 
-        open={runOpen} 
-        onOpenChange={setRunOpen} 
-        command={runningCommand} 
+      <RunCommandDialog
+        open={runOpen}
+        onOpenChange={setRunOpen}
+        command={runningCommand}
       />
 
       <DetailDialog

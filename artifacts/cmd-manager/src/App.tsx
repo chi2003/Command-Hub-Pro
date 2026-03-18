@@ -9,6 +9,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 // Pages
 import CommandsPage from "@/pages/commands";
 import ChainsPage from "@/pages/chains";
+import RegistryPage from "@/pages/registry";
 import SettingsPage from "@/pages/settings";
 import NotFound from "@/pages/not-found";
 
@@ -19,6 +20,7 @@ function Router() {
     <Switch>
       <Route path="/" component={CommandsPage} />
       <Route path="/chains" component={ChainsPage} />
+      <Route path="/registry" component={RegistryPage} />
       <Route path="/settings" component={SettingsPage} />
       <Route component={NotFound} />
     </Switch>

@@ -4,7 +4,8 @@ import {
   Settings,
   Moon,
   Sun,
-  Laptop
+  Laptop,
+  DatabaseZap,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import {
@@ -24,6 +25,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 const navItems = [
   { title: "Commands", href: "/", icon: Terminal },
   { title: "Command Chains", href: "/chains", icon: Layers },
+  { title: "Registry Manager", href: "/registry", icon: DatabaseZap },
 ];
 
 export function AppSidebar() {
