@@ -111,36 +111,12 @@ export default function SettingsPage() {
       setEditorState(null);
       toast({ title: "Category added", description: `"${name}" is now available.` });
     } else if (editorState.isBuiltIn) {
-      const trimmed = editorState.name.trim().toLowerCase().replace(/\s+/g, '-');
-      if (!trimmed) return;
-      const nameChanged = trimmed !== editorState.original;
-      if (nameChanged) {
-        const allNames = [
-          ...(CATEGORIES as readonly string[]).filter(n => !deletedBuiltins.includes(n) && n !== editorState.original),
-          ...customCats.map(c => c.name),
-        ];
-        if (allNames.includes(trimmed)) {
-          toast({ variant: "destructive", title: "Name already used", description: `"${trimmed}" is already a category.` });
-          return;
-        }
-        const updatedDeleted = [...deletedBuiltins, editorState.original];
-        saveDeletedBuiltinCategories(updatedDeleted);
-        setDeletedBuiltins(updatedDeleted);
-        const updatedCustom = [...customCats, { name: trimmed, color: editorState.color }];
-        saveCustomCategories(updatedCustom);
-        setCustomCats(updatedCustom);
-        const updatedOverrides = builtinOverrides.filter(o => o.name !== editorState.original);
-        saveBuiltinOverrides(updatedOverrides);
-        setBuiltinOverrides(updatedOverrides);
-        toast({ title: "Category updated", description: `"${editorState.original}" renamed to "${trimmed}".` });
-      } else {
-        const updatedOverrides = builtinOverrides.filter(o => o.name !== editorState.original);
-        const newOverrides = [...updatedOverrides, { name: editorState.original, color: editorState.color }];
-        saveBuiltinOverrides(newOverrides);
-        setBuiltinOverrides(newOverrides);
-        toast({ title: "Category updated", description: `"${editorState.original}" has been saved.` });
-      }
+      const updated = builtinOverrides.filter(o => o.name !== editorState.original);
+      const newOverrides = [...updated, { name: editorState.original, color: editorState.color }];
+      saveBuiltinOverrides(newOverrides);
+      setBuiltinOverrides(newOverrides);
       setEditorState(null);
+      toast({ title: "Category color updated", description: `"${editorState.original}" color has been saved.` });
     } else {
       const trimmed = editorState.name.trim().toLowerCase().replace(/\s+/g, '-');
       if (!trimmed) return;
@@ -377,7 +353,7 @@ export default function SettingsPage() {
 
       <div className="space-y-6">
         {/* Category Manager */}
-        <Card className="glass rounded-2xl border-border/50 shadow-sm overflow-hidden max-w-[37rem]">
+        <Card className="glass rounded-2xl border-border/50 shadow-sm overflow-hidden">
           <div className="bg-accent/5 p-6 border-b border-border/50 flex items-center gap-4">
             <div className="p-3 bg-accent/20 text-accent rounded-xl">
               <Tag className="w-6 h-6" />
@@ -390,7 +366,7 @@ export default function SettingsPage() {
             </div>
           </div>
           <CardContent className="p-0">
-            <div className="flex h-[320px]">
+            <div className="flex min-h-[380px]">
               {/* Left panel — category list + Add button */}
               <div className="w-1/4 border-r border-border/50 flex flex-col">
                 <div className="flex-1 overflow-y-auto p-3 space-y-1">
@@ -438,14 +414,21 @@ export default function SettingsPage() {
                     {/* Name field */}
                     <div className="space-y-1.5">
                       <p className="text-xs text-muted-foreground">Name</p>
-                      <Input
-                        placeholder="Category name (e.g. scripting)"
-                        value={editorState.name}
-                        onChange={e => setEditorState(prev => prev ? { ...prev, name: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') } : null)}
-                        onKeyDown={e => { if (e.key === 'Enter') handleEditorSave(); if (e.key === 'Escape') setEditorState(null); }}
-                        className="rounded-xl"
-                        autoFocus={editorState.isNew}
-                      />
+                      {editorState.isBuiltIn ? (
+                        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-secondary/40 border border-border/40">
+                          <span className="text-sm font-medium">{editorState.original}</span>
+                          <span className="text-xs text-muted-foreground ml-auto">Built-in (name locked)</span>
+                        </div>
+                      ) : (
+                        <Input
+                          placeholder="Category name (e.g. scripting)"
+                          value={editorState.name}
+                          onChange={e => setEditorState(prev => prev ? { ...prev, name: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') } : null)}
+                          onKeyDown={e => { if (e.key === 'Enter') handleEditorSave(); if (e.key === 'Escape') setEditorState(null); }}
+                          className="rounded-xl"
+                          autoFocus={editorState.isNew}
+                        />
+                      )}
                     </div>
 
                     {/* Color picker */}
@@ -483,7 +466,7 @@ export default function SettingsPage() {
                     <div className="flex items-center gap-3 pt-1">
                       <Button
                         onClick={handleEditorSave}
-                        disabled={!editorState.name.trim()}
+                        disabled={!editorState.isBuiltIn && !editorState.name.trim()}
                         size="sm"
                         className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90"
                       >
@@ -498,7 +481,7 @@ export default function SettingsPage() {
                           className="rounded-xl border-destructive/40 text-destructive hover:bg-destructive/10"
                         >
                           <Trash2 className="w-4 h-4 mr-2" />
-                          Delete
+                          {editorState.isBuiltIn ? "Hide" : "Delete"}
                         </Button>
                       )}
                       <Button
