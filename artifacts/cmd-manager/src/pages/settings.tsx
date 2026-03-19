@@ -397,7 +397,6 @@ export default function SettingsPage() {
                         )}
                       >
                         <CategoryBadge category={name} />
-                        {isBuiltIn && <span className="ml-auto text-[9px] text-muted-foreground shrink-0">built-in</span>}
                       </button>
                     );
                   })}
@@ -489,7 +488,7 @@ export default function SettingsPage() {
                           className="rounded-xl border-destructive/40 text-destructive hover:bg-destructive/10"
                         >
                           <Trash2 className="w-4 h-4 mr-2" />
-                          {editorState.isBuiltIn ? "Hide" : "Delete"}
+                          Delete
                         </Button>
                       )}
                       <Button
