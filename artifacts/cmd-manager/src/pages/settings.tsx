@@ -29,10 +29,10 @@ function chainsToCsv(chains: AppData["chains"]) {
   const rows: Record<string, string>[] = [];
   for (const chain of chains) {
     if (chain.steps.length === 0) {
-      rows.push({ chain_id: chain.id, chain_name: chain.name, chain_description: chain.description, chain_suffix: chain.suffix, step_index: "0", step_prefix: "", step_command: "" });
+      rows.push({ chain_id: chain.id, chain_name: chain.name, chain_description: chain.description, step_index: "0", step_prefix: "", step_command: "" });
     } else {
       chain.steps.forEach((step, i) => {
-        rows.push({ chain_id: chain.id, chain_name: chain.name, chain_description: chain.description, chain_suffix: chain.suffix, step_index: String(i), step_prefix: step.prefix, step_command: step.command });
+        rows.push({ chain_id: chain.id, chain_name: chain.name, chain_description: chain.description, step_index: String(i), step_prefix: step.prefix, step_command: step.command });
       });
     }
   }
@@ -85,10 +85,10 @@ export default function SettingsPage() {
 
   const parseCsvRows = (rows: Record<string, string>[]) => {
     if (rows.length > 0 && 'chain_id' in rows[0]) {
-      const chainMap = new Map<string, { id: string; name: string; description: string; suffix: string; steps: { id: string; prefix: string; command: string }[] }>();
+      const chainMap = new Map<string, { id: string; name: string; description: string; category: string; shell: string; steps: { id: string; prefix: string; command: string }[] }>();
       for (const row of rows) {
         if (!row.chain_id) continue;
-        if (!chainMap.has(row.chain_id)) chainMap.set(row.chain_id, { id: row.chain_id, name: row.chain_name || "", description: row.chain_description || "", suffix: row.chain_suffix || "", steps: [] });
+        if (!chainMap.has(row.chain_id)) chainMap.set(row.chain_id, { id: row.chain_id, name: row.chain_name || "", description: row.chain_description || "", category: row.chain_category || "system", shell: row.chain_shell || "cmd", steps: [] });
         if (row.step_command) chainMap.get(row.chain_id)!.steps.push({ id: uuidv4(), prefix: row.step_prefix || "", command: row.step_command });
       }
       return { type: "chains" as const, data: Array.from(chainMap.values()) };
@@ -98,6 +98,7 @@ export default function SettingsPage() {
       data: rows.filter(r => r.name && r.command).map(r => ({
         id: r.id || uuidv4(), name: r.name, description: r.description || "", command: r.command,
         requiresAdmin: r.requiresAdmin === "true" || r.requiresAdmin === "1",
+        category: r.category || "system", shell: r.shell || "cmd",
       })),
     };
   };

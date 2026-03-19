@@ -10,6 +10,7 @@ import { Layers, Copy, Check, Edit2, Play, ListOrdered, Pencil } from "lucide-re
 import { useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CategoryBadge } from "@/components/category-badge";
+import { ShellIcon } from "@/components/shell-icon";
 
 type ChainDetailDialogProps = {
   chain: CommandChain | null;
@@ -19,7 +20,7 @@ type ChainDetailDialogProps = {
   onRun?: (chain: CommandChain) => void;
 };
 
-function CopyableCommand({ command }: { command: string }) {
+function CopyableCommand({ command, amber = false }: { command: string; amber?: boolean }) {
   const [copied, setCopied] = useState(false);
   const handleCopy = () => {
     navigator.clipboard.writeText(command);
@@ -27,8 +28,8 @@ function CopyableCommand({ command }: { command: string }) {
     setTimeout(() => setCopied(false), 2000);
   };
   return (
-    <div className="relative group rounded-lg bg-[#0D1117] border border-border/30 overflow-hidden">
-      <pre className="p-3 pr-12 text-xs font-mono text-blue-300 whitespace-pre-wrap break-all leading-relaxed">
+    <div className={`relative group rounded-lg border overflow-hidden ${amber ? 'bg-amber-500/5 border-amber-500/20' : 'bg-[#0D1117] border-border/30'}`}>
+      <pre className={`p-3 pr-12 text-xs font-mono whitespace-pre-wrap break-all leading-relaxed ${amber ? 'text-amber-200/80' : 'text-blue-300'}`}>
         {command}
       </pre>
       <Button
@@ -46,14 +47,14 @@ function CopyableCommand({ command }: { command: string }) {
 export function ChainDetailDialog({ chain, open, onOpenChange, onEdit, onRun }: ChainDetailDialogProps) {
   if (!chain) return null;
 
+  const lastIndex = chain.steps.length - 1;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] h-[85vh] flex flex-col glass rounded-2xl border-border/50 p-0 overflow-hidden">
         <DialogHeader className="p-6 pb-4 border-b border-border/50 bg-background/50 shrink-0">
           <div className="flex items-start gap-3">
-            <div className="p-2.5 bg-secondary rounded-xl text-foreground mt-0.5">
-              <Layers className="w-5 h-5 text-accent" />
-            </div>
+            <ShellIcon shell={chain.shell} />
             <div className="flex-1 min-w-0">
               <DialogTitle className="text-xl leading-tight">{chain.name}</DialogTitle>
               <p className="text-sm text-muted-foreground mt-0.5">{chain.description}</p>
@@ -62,9 +63,9 @@ export function ChainDetailDialog({ chain, open, onOpenChange, onEdit, onRun }: 
                 <span className="text-xs text-muted-foreground flex items-center gap-1">
                   <ListOrdered className="w-3 h-3" /> {chain.steps.length} steps
                 </span>
-                {chain.suffix && (
+                {chain.steps.length > 1 && (
                   <span className="text-xs text-amber-400/70 flex items-center gap-1">
-                    <Pencil className="w-3 h-3" /> Manual suffix
+                    <Pencil className="w-3 h-3" /> Last step pastes
                   </span>
                 )}
               </div>
@@ -74,34 +75,28 @@ export function ChainDetailDialog({ chain, open, onOpenChange, onEdit, onRun }: 
 
         <ScrollArea className="flex-1 p-6">
           <div className="space-y-4 pb-2">
-            {chain.steps.map((step, index) => (
-              <div key={step.id} className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0">
-                    {index + 1}
-                  </span>
-                  <p className="text-sm font-medium text-foreground">{step.prefix}</p>
+            {chain.steps.map((step, index) => {
+              const isLast = index === lastIndex && chain.steps.length > 1;
+              return (
+                <div key={step.id} className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    {isLast
+                      ? <span className="w-6 h-6 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold flex items-center justify-center shrink-0"><Pencil className="w-3 h-3" /></span>
+                      : <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0">{index + 1}</span>
+                    }
+                    <p className="text-sm font-medium text-foreground">{step.prefix}</p>
+                  </div>
+                  <div className="pl-8">
+                    <CopyableCommand command={step.command} amber={isLast} />
+                  </div>
+                  {isLast && (
+                    <p className="pl-8 text-[11px] text-amber-400/60 leading-relaxed">
+                      Paste this into your terminal after the steps above complete. Fill in any placeholders before pressing Enter.
+                    </p>
+                  )}
                 </div>
-                <div className="pl-8">
-                  <CopyableCommand command={step.command} />
-                </div>
-              </div>
-            ))}
-
-            {chain.suffix && (
-              <div className="pt-3 border-t border-border/30 space-y-2">
-                <div className="flex items-center gap-2">
-                  <Pencil className="w-3.5 h-3.5 text-amber-400" />
-                  <p className="text-xs font-semibold text-amber-400">Paste &amp; Complete Manually</p>
-                </div>
-                <div className="rounded-lg border border-amber-500/25 bg-amber-500/5 overflow-hidden">
-                  <CopyableCommand command={chain.suffix} />
-                  <p className="text-[11px] text-amber-400/60 px-3 pb-2.5 leading-relaxed">
-                    Paste this into your terminal after the steps complete. Fill in any placeholders before executing.
-                  </p>
-                </div>
-              </div>
-            )}
+              );
+            })}
           </div>
         </ScrollArea>
 

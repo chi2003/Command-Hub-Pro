@@ -4,21 +4,16 @@ import { Command } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Plus, Search, DatabaseZap, MoreVertical, Edit2, Trash2, Play, ShieldAlert, Loader2, AlertTriangle } from "lucide-react";
 import {
-  Plus, Search, DatabaseZap, MoreVertical, Edit2, Trash2, Play, ShieldAlert, Loader2, AlertTriangle,
-} from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { CommandFormDialog } from "@/components/command-form-dialog";
 import { RunCommandDialog } from "@/components/run-command-dialog";
 import { DetailDialog } from "@/components/detail-dialog";
 import { CategoryBadge } from "@/components/category-badge";
 import { CategoryFilter } from "@/components/category-filter";
+import { ShellIcon } from "@/components/shell-icon";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function RegistryPage() {
@@ -28,7 +23,6 @@ export default function RegistryPage() {
   const updateMutation = useUpdateRegistryCommand();
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
-
   const [formOpen, setFormOpen] = useState(false);
   const [editingCommand, setEditingCommand] = useState<Command | null>(null);
   const [runOpen, setRunOpen] = useState(false);
@@ -37,8 +31,7 @@ export default function RegistryPage() {
   const [detailCommand, setDetailCommand] = useState<Command | null>(null);
 
   const filteredCommands = commands.filter(c => {
-    const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase()) || 
-                          c.description.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase()) || c.description.toLowerCase().includes(search.toLowerCase());
     const matchesCat = categoryFilter === "all" || c.category === categoryFilter;
     return matchesSearch && matchesCat;
   });
@@ -53,7 +46,8 @@ export default function RegistryPage() {
 
   return (
     <div className="h-full flex flex-col p-6 lg:p-8 max-w-7xl mx-auto w-full">
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
+      {/* Header — matches Commands/Chains vertical spacing */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
             <DatabaseZap className="w-8 h-8 text-orange-400" />
@@ -61,14 +55,22 @@ export default function RegistryPage() {
           </h1>
           <p className="text-muted-foreground mt-1">Windows Registry commands using reg.exe.</p>
         </div>
-        <Button
-          onClick={handleAdd}
-          className="rounded-xl bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/20 hover-elevate px-6 shrink-0"
-        >
+        <Button onClick={handleAdd} className="rounded-xl bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/20 hover-elevate px-6 shrink-0">
           <Plus className="w-5 h-5 mr-2" /> New Registry Command
         </Button>
       </div>
 
+      {/* Search + filter — same vertical position as Commands/Chains */}
+      <div className="flex gap-3 mb-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+          <Input placeholder="Search registry commands..." value={search} onChange={e => setSearch(e.target.value)}
+            className="pl-11 rounded-xl bg-card border-border/50 shadow-sm h-12 text-base focus-visible:ring-orange-500/20" />
+        </div>
+        <CategoryFilter value={categoryFilter} onChange={setCategoryFilter} />
+      </div>
+
+      {/* Warning — below search */}
       <div className="flex items-start gap-3 mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
         <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
         <p className="text-sm text-amber-600 dark:text-amber-400 leading-relaxed">
@@ -76,23 +78,8 @@ export default function RegistryPage() {
         </p>
       </div>
 
-      <div className="flex gap-3 mb-6">
-        <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-          <Input
-            placeholder="Search registry commands..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="pl-11 rounded-xl bg-card border-border/50 shadow-sm h-12 text-base focus-visible:ring-orange-500/20"
-          />
-        </div>
-        <CategoryFilter value={categoryFilter} onChange={setCategoryFilter} />
-      </div>
-
       {isLoading ? (
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 text-orange-400 animate-spin" />
-        </div>
+        <div className="flex-1 flex items-center justify-center"><Loader2 className="w-8 h-8 text-orange-400 animate-spin" /></div>
       ) : filteredCommands.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-card/30 rounded-2xl border border-dashed border-border/50">
           <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mb-4 text-muted-foreground">
@@ -110,23 +97,15 @@ export default function RegistryPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 auto-rows-max">
           <AnimatePresence>
             {filteredCommands.map((cmd) => (
-              <motion.div
-                layout
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.2 }}
-                key={cmd.id}
-                onClick={() => handleDetail(cmd)}
+              <motion.div layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.2 }}
+                key={cmd.id} onClick={() => handleDetail(cmd)}
                 className="group bg-card rounded-2xl p-5 border border-border/50 shadow-sm hover:shadow-md hover:border-orange-400/30 transition-all duration-300 flex flex-col h-full relative overflow-hidden cursor-pointer"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
                 <div className="flex justify-between items-start mb-3 relative z-10">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-orange-500/10 rounded-lg text-orange-400">
-                      <DatabaseZap className="w-5 h-5" />
-                    </div>
+                    <ShellIcon shell={cmd.shell} />
                     <h3 className="font-semibold text-lg line-clamp-1">{cmd.name}</h3>
                   </div>
                   <DropdownMenu>
@@ -147,9 +126,7 @@ export default function RegistryPage() {
                   </DropdownMenu>
                 </div>
 
-                <p className="text-sm text-muted-foreground mb-4 line-clamp-2 flex-1 relative z-10">
-                  {cmd.description}
-                </p>
+                <p className="text-sm text-muted-foreground mb-4 line-clamp-2 flex-1 relative z-10">{cmd.description}</p>
 
                 <div className="flex items-center justify-between pt-4 border-t border-border/30 mt-auto relative z-10 gap-3">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -160,11 +137,8 @@ export default function RegistryPage() {
                       </Badge>
                     )}
                   </div>
-                  <Button
-                    size="sm"
-                    onClick={e => { e.stopPropagation(); handleRun(cmd); }}
-                    className="rounded-lg bg-orange-500/10 text-orange-400 hover:bg-orange-500 hover:text-white transition-colors shrink-0"
-                  >
+                  <Button size="sm" onClick={e => { e.stopPropagation(); handleRun(cmd); }}
+                    className="rounded-lg bg-orange-500/10 text-orange-400 hover:bg-orange-500 hover:text-white transition-colors shrink-0">
                     <Play className="w-4 h-4 mr-1.5" /> Run
                   </Button>
                 </div>
@@ -174,13 +148,9 @@ export default function RegistryPage() {
         </div>
       )}
 
-      <CommandFormDialog
-        open={formOpen}
-        onOpenChange={setFormOpen}
-        command={editingCommand}
+      <CommandFormDialog open={formOpen} onOpenChange={setFormOpen} command={editingCommand}
         onCreate={(data) => createMutation.mutateAsync(data)}
-        onUpdate={(data) => updateMutation.mutateAsync(data)}
-      />
+        onUpdate={(data) => updateMutation.mutateAsync(data)} />
       <RunCommandDialog open={runOpen} onOpenChange={setRunOpen} command={runningCommand} />
       <DetailDialog open={detailOpen} onOpenChange={setDetailOpen} command={detailCommand} onEdit={handleEdit} onRun={handleRun} />
     </div>

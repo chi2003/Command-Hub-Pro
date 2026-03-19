@@ -7,9 +7,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Command } from "@/lib/store";
-import { Terminal, ShieldAlert, Copy, Check, Edit2, Play } from "lucide-react";
+import { ShieldAlert, Copy, Check, Edit2, Play } from "lucide-react";
 import { useState } from "react";
 import { CategoryBadge } from "@/components/category-badge";
+import { ShellIcon } from "@/components/shell-icon";
 
 type DetailDialogProps = {
   command: Command | null;
@@ -35,9 +36,7 @@ export function DetailDialog({ command, open, onOpenChange, onEdit, onRun }: Det
       <DialogContent className="sm:max-w-[560px] glass rounded-2xl border-border/50 p-0 overflow-hidden">
         <DialogHeader className="p-6 pb-4 border-b border-border/50 bg-background/50">
           <div className="flex items-start gap-3">
-            <div className="p-2.5 bg-secondary rounded-xl text-foreground mt-0.5">
-              <Terminal className="w-5 h-5" />
-            </div>
+            <ShellIcon shell={command.shell} />
             <div className="flex-1 min-w-0">
               <DialogTitle className="text-xl leading-tight">{command.name}</DialogTitle>
               <div className="flex items-center gap-2 mt-1.5 flex-wrap">
@@ -61,17 +60,18 @@ export function DetailDialog({ command, open, onOpenChange, onEdit, onRun }: Det
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Command</p>
             <div className="relative group rounded-xl bg-[#0D1117] border border-border/30 overflow-hidden">
-              <pre className="p-4 pr-14 text-sm font-mono text-blue-300 whitespace-pre-wrap break-all leading-relaxed">
+              <div className="flex justify-between items-center px-4 py-2.5 bg-gray-900/80 border-b border-gray-800">
+                <span className="text-xs font-mono text-gray-400">
+                  {command.shell === "powershell" ? "PowerShell" : command.shell === "both" ? "CMD / PowerShell" : "Command Prompt"}
+                </span>
+                <button onClick={handleCopy} className="text-gray-400 hover:text-white transition-colors flex items-center gap-1.5 text-xs">
+                  {copied ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
+                  {copied ? "Copied" : "Copy"}
+                </button>
+              </div>
+              <pre className="p-4 text-sm font-mono text-blue-300 whitespace-pre-wrap break-all leading-relaxed">
                 {command.command}
               </pre>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={handleCopy}
-                className="absolute top-2 right-2 h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors"
-              >
-                {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
-              </Button>
             </div>
             {command.requiresAdmin && (
               <p className="text-xs text-amber-500/80 mt-2 flex items-center gap-1">
