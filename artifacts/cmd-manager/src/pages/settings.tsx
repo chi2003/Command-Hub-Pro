@@ -76,26 +76,11 @@ export default function SettingsPage() {
   const [customCats, setCustomCats] = useState<CustomCategory[]>(() => getCustomCategories());
   const [deletedBuiltins, setDeletedBuiltins] = useState<string[]>(() => getDeletedBuiltinCategories());
   const [builtinOverrides, setBuiltinOverrides] = useState<BuiltinOverride[]>(() => getBuiltinOverrides());
-  const [newCatName, setNewCatName] = useState("");
-  const [newCatColor, setNewCatColor] = useState<PaletteColor>("blue");
-  const [editingCat, setEditingCat] = useState<{ original: string; name: string; color: PaletteColor; isBuiltIn: boolean } | null>(null);
+  const [editorState, setEditorState] = useState<{
+    original: string; name: string; color: PaletteColor; isBuiltIn: boolean; isNew: boolean;
+  } | null>(null);
 
   const date = new Date().toISOString().split('T')[0];
-
-  const handleAddCategory = () => {
-    const name = newCatName.trim().toLowerCase().replace(/\s+/g, '-');
-    if (!name) return;
-    const allNames = [...CATEGORIES as readonly string[], ...customCats.map(c => c.name)];
-    if (allNames.includes(name)) {
-      toast({ variant: "destructive", title: "Category already exists", description: `"${name}" is already a category.` });
-      return;
-    }
-    const updated = [...customCats, { name, color: newCatColor }];
-    saveCustomCategories(updated);
-    setCustomCats(updated);
-    setNewCatName("");
-    toast({ title: "Category added", description: `"${name}" is now available.` });
-  };
 
   const handleDeleteCategory = (name: string, isBuiltIn: boolean) => {
     if (isBuiltIn) {
@@ -110,36 +95,43 @@ export default function SettingsPage() {
     toast({ title: "Category removed", description: `"${name}" has been hidden.` });
   };
 
-  const handleStartEdit = (name: string, color: PaletteColor, isBuiltIn: boolean) => {
-    setEditingCat({ original: name, name, color, isBuiltIn });
-  };
-
-  const handleSaveEdit = () => {
-    if (!editingCat) return;
-
-    if (editingCat.isBuiltIn) {
-      // For built-ins: only change color via override
-      const updated = builtinOverrides.filter(o => o.name !== editingCat.original);
-      const newOverrides = [...updated, { name: editingCat.original, color: editingCat.color }];
+  const handleEditorSave = () => {
+    if (!editorState) return;
+    if (editorState.isNew) {
+      const name = editorState.name.trim().toLowerCase().replace(/\s+/g, '-');
+      if (!name) return;
+      const allNames = [...CATEGORIES as readonly string[], ...customCats.map(c => c.name)];
+      if (allNames.includes(name)) {
+        toast({ variant: "destructive", title: "Category already exists", description: `"${name}" is already a category.` });
+        return;
+      }
+      const updated = [...customCats, { name, color: editorState.color }];
+      saveCustomCategories(updated);
+      setCustomCats(updated);
+      setEditorState(null);
+      toast({ title: "Category added", description: `"${name}" is now available.` });
+    } else if (editorState.isBuiltIn) {
+      const updated = builtinOverrides.filter(o => o.name !== editorState.original);
+      const newOverrides = [...updated, { name: editorState.original, color: editorState.color }];
       saveBuiltinOverrides(newOverrides);
       setBuiltinOverrides(newOverrides);
-      setEditingCat(null);
-      toast({ title: "Category color updated", description: `"${editingCat.original}" color has been saved.` });
+      setEditorState(null);
+      toast({ title: "Category color updated", description: `"${editorState.original}" color has been saved.` });
     } else {
-      const trimmed = editingCat.name.trim().toLowerCase().replace(/\s+/g, '-');
+      const trimmed = editorState.name.trim().toLowerCase().replace(/\s+/g, '-');
       if (!trimmed) return;
       const allNames = [
         ...(CATEGORIES as readonly string[]).filter(n => !deletedBuiltins.includes(n)),
-        ...customCats.filter(c => c.name !== editingCat.original).map(c => c.name),
+        ...customCats.filter(c => c.name !== editorState.original).map(c => c.name),
       ];
       if (allNames.includes(trimmed)) {
         toast({ variant: "destructive", title: "Name already used", description: `"${trimmed}" is already a category.` });
         return;
       }
-      const updated = customCats.map(c => c.name === editingCat.original ? { name: trimmed, color: editingCat.color } : c);
+      const updated = customCats.map(c => c.name === editorState.original ? { name: trimmed, color: editorState.color } : c);
       saveCustomCategories(updated);
       setCustomCats(updated);
-      setEditingCat(null);
+      setEditorState(null);
       toast({ title: "Category updated", description: `"${trimmed}" has been saved.` });
     }
   };
@@ -373,124 +365,134 @@ export default function SettingsPage() {
               </CardDescription>
             </div>
           </div>
-          <CardContent className="p-6 space-y-6">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">All Categories</p>
-              <div className="flex flex-wrap gap-2">
-                {allCategoryEntries.map(({ name, isBuiltIn, color }) => {
-                  const isEditing = editingCat?.original === name;
-                  const currentColor: PaletteColor = color ?? "blue";
-                  return (
-                    <div key={name} className="flex items-center gap-1">
-                      {isEditing ? (
-                        <div className="flex items-center gap-2 bg-secondary/50 border border-border/60 rounded-xl px-3 py-2 flex-wrap">
-                          {!isBuiltIn && (
-                            <Input
-                              value={editingCat.name}
-                              onChange={e => setEditingCat(prev => prev ? { ...prev, name: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') } : null)}
-                              onKeyDown={e => { if (e.key === 'Enter') handleSaveEdit(); if (e.key === 'Escape') setEditingCat(null); }}
-                              className="h-6 text-xs rounded-md px-2 w-28 border-border/50"
-                              autoFocus
-                            />
-                          )}
-                          {isBuiltIn && (
-                            <span className="text-xs text-muted-foreground font-medium mr-1">{name}</span>
-                          )}
-                          <div className="flex gap-1 flex-wrap">
-                            {(Object.entries(COLOR_HEX) as [PaletteColor, string][]).map(([key, hex]) => (
-                              <button
-                                key={key}
-                                onClick={() => setEditingCat(prev => prev ? { ...prev, color: key } : null)}
-                                title={key}
-                                className={`w-4 h-4 rounded-full border transition-all ${editingCat.color === key ? 'ring-1 ring-offset-1 ring-primary ring-offset-background scale-110' : 'border-transparent hover:scale-105'}`}
-                                style={{ backgroundColor: hex + '55', borderColor: hex + '80' }}
-                              />
-                            ))}
-                          </div>
-                          <button
-                            onClick={handleSaveEdit}
-                            className="w-5 h-5 rounded-full flex items-center justify-center text-green-400 hover:bg-green-500/10 transition-colors"
-                            title="Save"
-                          >
-                            <Check className="w-3 h-3" />
-                          </button>
-                          <button
-                            onClick={() => setEditingCat(null)}
-                            className="w-5 h-5 rounded-full flex items-center justify-center text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                            title="Cancel"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </div>
-                      ) : (
-                        <>
-                          <CategoryBadge category={name} />
-                          <button
-                            onClick={() => handleStartEdit(name, currentColor, isBuiltIn)}
-                            className="w-4 h-4 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                            title={isBuiltIn ? `Change color for "${name}"` : `Edit "${name}"`}
-                          >
-                            <Edit2 className="w-2.5 h-2.5" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteCategory(name, isBuiltIn)}
-                            className="w-4 h-4 rounded-full flex items-center justify-center text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                            title={`Remove "${name}"`}
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="border-t border-border/50 pt-5 space-y-4">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Add New Category</p>
-              <Input
-                placeholder="Category name (e.g. scripting)"
-                value={newCatName}
-                onChange={e => setNewCatName(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-                onKeyDown={e => { if (e.key === 'Enter') handleAddCategory(); }}
-                className="rounded-xl"
-              />
-              <div>
-                <p className="text-xs text-muted-foreground mb-2">Pick a color</p>
-                <div className="flex gap-2 flex-wrap">
-                  {(Object.entries(COLOR_HEX) as [PaletteColor, string][]).map(([key, hex]) => (
-                    <button
-                      key={key}
-                      onClick={() => setNewCatColor(key)}
-                      title={key}
-                      className={`w-7 h-7 rounded-full border-2 transition-all ${newCatColor === key ? 'ring-2 ring-offset-2 ring-primary ring-offset-background scale-110' : 'border-transparent hover:scale-105'}`}
-                      style={{ backgroundColor: hex + '33', borderColor: hex + '80' }}
-                    >
-                      <span className="sr-only">{key}</span>
-                    </button>
-                  ))}
+          <CardContent className="p-0">
+            <div className="flex min-h-[380px]">
+              {/* Left panel — category list + Add button */}
+              <div className="w-1/4 border-r border-border/50 flex flex-col">
+                <div className="flex-1 overflow-y-auto p-3 space-y-1">
+                  {allCategoryEntries.map(({ name, isBuiltIn, color }) => {
+                    const isSelected = editorState?.original === name && !editorState.isNew;
+                    return (
+                      <button
+                        key={name}
+                        onClick={() => setEditorState({ original: name, name, color: color ?? "blue", isBuiltIn, isNew: false })}
+                        className={cn(
+                          "w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-left transition-colors",
+                          isSelected ? "bg-accent/10 border border-border/60" : "hover:bg-secondary/50"
+                        )}
+                      >
+                        <CategoryBadge category={name} />
+                        {isBuiltIn && <span className="ml-auto text-[9px] text-muted-foreground shrink-0">built-in</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="p-3 border-t border-border/50">
+                  <Button
+                    onClick={() => setEditorState({ original: "", name: "", color: "blue", isBuiltIn: false, isNew: true })}
+                    className="w-full rounded-xl bg-accent text-accent-foreground hover:bg-accent/90"
+                    size="sm"
+                  >
+                    <Plus className="w-4 h-4 mr-2" /> Add Category
+                  </Button>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <Button
-                  onClick={handleAddCategory}
-                  disabled={!newCatName.trim()}
-                  className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90"
-                >
-                  <Plus className="w-4 h-4 mr-2" /> Add Category
-                </Button>
-                {newCatName.trim() && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    Preview:
-                    <span className={cn(
-                      "inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider border",
-                      COLOR_PALETTE[newCatColor].bg,
-                      COLOR_PALETTE[newCatColor].text,
-                      COLOR_PALETTE[newCatColor].border,
-                    )}>
-                      {newCatName.trim()}
-                    </span>
+
+              {/* Right panel — editor */}
+              <div className="flex-1 p-6 flex flex-col">
+                {!editorState ? (
+                  <div className="flex-1 flex flex-col items-center justify-center text-center text-muted-foreground gap-3">
+                    <Tag className="w-10 h-10 opacity-20" />
+                    <p className="text-sm">Select a category from the list to edit it, or click <span className="font-medium text-foreground/60">Add Category</span> to create a new one.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-5">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      {editorState.isNew ? "New Category" : editorState.isBuiltIn ? "Edit Built-in Category" : "Edit Category"}
+                    </p>
+
+                    {/* Name field */}
+                    <div className="space-y-1.5">
+                      <p className="text-xs text-muted-foreground">Name</p>
+                      {editorState.isBuiltIn ? (
+                        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-secondary/40 border border-border/40">
+                          <span className="text-sm font-medium">{editorState.original}</span>
+                          <span className="text-xs text-muted-foreground ml-auto">Built-in (name locked)</span>
+                        </div>
+                      ) : (
+                        <Input
+                          placeholder="Category name (e.g. scripting)"
+                          value={editorState.name}
+                          onChange={e => setEditorState(prev => prev ? { ...prev, name: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') } : null)}
+                          onKeyDown={e => { if (e.key === 'Enter') handleEditorSave(); if (e.key === 'Escape') setEditorState(null); }}
+                          className="rounded-xl"
+                          autoFocus={editorState.isNew}
+                        />
+                      )}
+                    </div>
+
+                    {/* Color picker */}
+                    <div className="space-y-1.5">
+                      <p className="text-xs text-muted-foreground">Color</p>
+                      <div className="flex gap-2 flex-wrap">
+                        {(Object.entries(COLOR_HEX) as [PaletteColor, string][]).map(([key, hex]) => (
+                          <button
+                            key={key}
+                            onClick={() => setEditorState(prev => prev ? { ...prev, color: key } : null)}
+                            title={key}
+                            className={`w-7 h-7 rounded-full border-2 transition-all ${editorState.color === key ? 'ring-2 ring-offset-2 ring-primary ring-offset-background scale-110' : 'border-transparent hover:scale-105'}`}
+                            style={{ backgroundColor: hex + '33', borderColor: hex + '80' }}
+                          >
+                            <span className="sr-only">{key}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Preview */}
+                    <div className="space-y-1.5">
+                      <p className="text-xs text-muted-foreground">Preview</p>
+                      <span className={cn(
+                        "inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider border",
+                        COLOR_PALETTE[editorState.color].bg,
+                        COLOR_PALETTE[editorState.color].text,
+                        COLOR_PALETTE[editorState.color].border,
+                      )}>
+                        {editorState.isNew ? (editorState.name || "preview") : editorState.original}
+                      </span>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-3 pt-1">
+                      <Button
+                        onClick={handleEditorSave}
+                        disabled={!editorState.isBuiltIn && !editorState.name.trim()}
+                        size="sm"
+                        className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90"
+                      >
+                        <Check className="w-4 h-4 mr-2" />
+                        {editorState.isNew ? "Add Category" : "Save Changes"}
+                      </Button>
+                      {!editorState.isNew && (
+                        <Button
+                          onClick={() => { handleDeleteCategory(editorState.original, editorState.isBuiltIn); setEditorState(null); }}
+                          variant="outline"
+                          size="sm"
+                          className="rounded-xl border-destructive/40 text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          {editorState.isBuiltIn ? "Hide" : "Delete"}
+                        </Button>
+                      )}
+                      <Button
+                        onClick={() => setEditorState(null)}
+                        variant="ghost"
+                        size="sm"
+                        className="rounded-xl text-muted-foreground ml-auto"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>

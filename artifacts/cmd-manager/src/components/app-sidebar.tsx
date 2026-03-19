@@ -89,10 +89,14 @@ export function AppSidebar() {
                 <SidebarMenuButton
                   asChild
                   isActive={location === '/groups'}
-                  className={getButtonClass('/groups', 'purple')}
+                  className={
+                    location === '/groups'
+                      ? "my-1 px-4 py-3 rounded-xl bg-purple-400/10 text-white font-medium shadow-sm transition-all duration-200"
+                      : "my-1 px-4 py-3 rounded-xl hover:bg-secondary text-muted-foreground hover:text-white hover-elevate transition-all duration-200"
+                  }
                 >
-                  <Link href="/groups" className="flex items-center gap-3 w-full">
-                    <FolderKanban className={getIconClass('/groups', 'purple')} />
+                  <Link href="/groups" className="flex items-center gap-3 w-full group">
+                    <FolderKanban className={location === '/groups' ? "w-5 h-5 text-purple-400" : "w-5 h-5 text-muted-foreground group-hover:text-white"} />
                     <span>Groups</span>
                   </Link>
                 </SidebarMenuButton>
