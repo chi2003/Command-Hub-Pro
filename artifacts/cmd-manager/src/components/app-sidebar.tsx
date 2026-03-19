@@ -13,7 +13,7 @@ type NavItem = {
   title: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-  accent?: "orange";
+  accent?: "orange" | "purple";
 };
 
 const navItems: NavItem[] = [
@@ -26,19 +26,25 @@ export function AppSidebar() {
   const [location] = useLocation();
   const { setTheme, theme } = useTheme();
 
-  const getButtonClass = (href: string, accent?: "orange") => {
+  const getButtonClass = (href: string, accent?: "orange" | "purple") => {
     const isActive = location === href;
     if (isActive) {
-      return accent === "orange"
-        ? "my-1 px-4 py-3 rounded-xl bg-orange-400/10 text-orange-400 font-medium shadow-sm transition-all duration-200"
-        : "my-1 px-4 py-3 rounded-xl bg-primary/10 text-primary font-medium shadow-sm transition-all duration-200";
+      if (accent === "orange")  return "my-1 px-4 py-3 rounded-xl bg-orange-400/10 text-orange-400 font-medium shadow-sm transition-all duration-200";
+      if (accent === "purple")  return "my-1 px-4 py-3 rounded-xl bg-purple-400/10 text-purple-400 font-medium shadow-sm transition-all duration-200";
+      return "my-1 px-4 py-3 rounded-xl bg-primary/10 text-primary font-medium shadow-sm transition-all duration-200";
     }
+    if (accent === "purple") return "my-1 px-4 py-3 rounded-xl hover:bg-secondary text-purple-400/70 hover:text-purple-400 hover-elevate transition-all duration-200";
     return "my-1 px-4 py-3 rounded-xl hover:bg-secondary text-muted-foreground hover:text-foreground hover-elevate transition-all duration-200";
   };
 
-  const getIconClass = (href: string, accent?: "orange") => {
+  const getIconClass = (href: string, accent?: "orange" | "purple") => {
     const isActive = location === href;
-    if (isActive) return accent === "orange" ? "w-5 h-5 text-orange-400" : "w-5 h-5 text-primary";
+    if (isActive) {
+      if (accent === "orange") return "w-5 h-5 text-orange-400";
+      if (accent === "purple") return "w-5 h-5 text-purple-400";
+      return "w-5 h-5 text-primary";
+    }
+    if (accent === "purple") return "w-5 h-5 text-purple-400/70";
     return "w-5 h-5";
   };
 
@@ -83,10 +89,10 @@ export function AppSidebar() {
                 <SidebarMenuButton
                   asChild
                   isActive={location === '/groups'}
-                  className={getButtonClass('/groups')}
+                  className={getButtonClass('/groups', 'purple')}
                 >
                   <Link href="/groups" className="flex items-center gap-3 w-full">
-                    <FolderKanban className={getIconClass('/groups')} />
+                    <FolderKanban className={getIconClass('/groups', 'purple')} />
                     <span>Groups</span>
                   </Link>
                 </SidebarMenuButton>

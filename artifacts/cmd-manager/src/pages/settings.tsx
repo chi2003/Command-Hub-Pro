@@ -524,7 +524,7 @@ export default function SettingsPage() {
                 </div>
               </Button>
               <Button onClick={handleExportCommandsCsv} variant="outline" className="w-full justify-start h-12 rounded-xl text-left border-border/50 hover:bg-secondary hover:text-foreground">
-                <FileSpreadsheet className="w-5 h-5 mr-3 text-green-500" />
+                <FileSpreadsheet className="w-5 h-5 mr-3 text-blue-400" />
                 <div className="flex flex-col items-start leading-tight">
                   <span>Export Commands to CSV</span>
                   <span className="text-[10px] text-muted-foreground">Spreadsheet format (Commands only)</span>
@@ -573,18 +573,18 @@ export default function SettingsPage() {
               <h3 className="font-semibold flex items-center gap-2 text-muted-foreground text-sm">
                 <Download className="w-4 h-4" /> Export
               </h3>
-              <Button onClick={handleExportGroupsCsv} variant="outline" className="w-full justify-start h-12 rounded-xl text-left border-border/50 hover:bg-secondary hover:text-foreground">
-                <FileSpreadsheet className="w-5 h-5 mr-3 text-purple-400" />
-                <div className="flex flex-col items-start leading-tight">
-                  <span>Export Groups to CSV</span>
-                  <span className="text-[10px] text-muted-foreground">Groups with pipe-separated item IDs</span>
-                </div>
-              </Button>
               <Button onClick={handleExportGroupsJson} variant="outline" className="w-full justify-start h-12 rounded-xl text-left border-border/50 hover:bg-secondary hover:text-foreground">
                 <FileJson className="w-5 h-5 mr-3 text-purple-400" />
                 <div className="flex flex-col items-start leading-tight">
                   <span>Export Groups to JSON</span>
                   <span className="text-[10px] text-muted-foreground">Groups as a JSON array</span>
+                </div>
+              </Button>
+              <Button onClick={handleExportGroupsCsv} variant="outline" className="w-full justify-start h-12 rounded-xl text-left border-border/50 hover:bg-secondary hover:text-foreground">
+                <FileSpreadsheet className="w-5 h-5 mr-3 text-purple-400" />
+                <div className="flex flex-col items-start leading-tight">
+                  <span>Export Groups to CSV</span>
+                  <span className="text-[10px] text-muted-foreground">Groups with pipe-separated item IDs</span>
                 </div>
               </Button>
             </div>
@@ -596,7 +596,7 @@ export default function SettingsPage() {
               <Button onClick={() => groupFileInputRef.current?.click()} disabled={isImportingGroups}
                 className="w-full h-12 rounded-xl bg-secondary text-foreground hover:bg-secondary/80 border border-border/50">
                 <Upload className="w-5 h-5 mr-2" />
-                {isImportingGroups ? "Importing..." : "Select Groups CSV/JSON"}
+                {isImportingGroups ? "Importing..." : "Select Groups JSON/CSV"}
               </Button>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 JSON must be an array of group objects. CSV must have columns: id, name, description, command_ids, chain_ids, registry_ids (pipe-separated). Appends to existing groups.
@@ -623,18 +623,18 @@ export default function SettingsPage() {
               <h3 className="font-semibold flex items-center gap-2 text-muted-foreground text-sm">
                 <Download className="w-4 h-4" /> Export
               </h3>
-              <Button onClick={handleExportRegistryCsv} variant="outline" className="w-full justify-start h-12 rounded-xl text-left border-border/50 hover:bg-secondary hover:text-foreground">
-                <FileSpreadsheet className="w-5 h-5 mr-3 text-orange-400" />
-                <div className="flex flex-col items-start leading-tight">
-                  <span>Export Registry to CSV</span>
-                  <span className="text-[10px] text-muted-foreground">All registry commands as spreadsheet</span>
-                </div>
-              </Button>
               <Button onClick={handleExportRegistryJson} variant="outline" className="w-full justify-start h-12 rounded-xl text-left border-border/50 hover:bg-secondary hover:text-foreground">
                 <FileJson className="w-5 h-5 mr-3 text-orange-400" />
                 <div className="flex flex-col items-start leading-tight">
                   <span>Export Registry to JSON</span>
                   <span className="text-[10px] text-muted-foreground">All registry commands as JSON array</span>
+                </div>
+              </Button>
+              <Button onClick={handleExportRegistryCsv} variant="outline" className="w-full justify-start h-12 rounded-xl text-left border-border/50 hover:bg-secondary hover:text-foreground">
+                <FileSpreadsheet className="w-5 h-5 mr-3 text-orange-400" />
+                <div className="flex flex-col items-start leading-tight">
+                  <span>Export Registry to CSV</span>
+                  <span className="text-[10px] text-muted-foreground">All registry commands as spreadsheet</span>
                 </div>
               </Button>
             </div>
@@ -646,7 +646,7 @@ export default function SettingsPage() {
               <Button onClick={() => registryFileInputRef.current?.click()} disabled={isImportingRegistry}
                 className="w-full h-12 rounded-xl bg-secondary text-foreground hover:bg-secondary/80 border border-border/50">
                 <Upload className="w-5 h-5 mr-2" />
-                {isImportingRegistry ? "Importing..." : "Select Registry CSV/JSON"}
+                {isImportingRegistry ? "Importing..." : "Select Registry JSON/CSV"}
               </Button>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 Imports a CSV (same format as export) or a JSON array of registry commands. Appends to existing registry commands.

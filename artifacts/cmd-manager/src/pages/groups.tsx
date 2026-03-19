@@ -50,7 +50,7 @@ export default function GroupsPage() {
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Groups</h1>
           <p className="text-muted-foreground mt-1">Organize commands, chains, and registry items into collections.</p>
         </div>
-        <Button onClick={handleAdd} className="rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover-elevate px-6">
+        <Button onClick={handleAdd} className="rounded-xl bg-purple-500 text-white shadow-lg shadow-purple-500/20 hover:bg-purple-600 hover-elevate px-6">
           <Plus className="w-5 h-5 mr-2" /> New Group
         </Button>
       </div>
@@ -88,7 +88,7 @@ export default function GroupsPage() {
                   
                   {/* Group header */}
                   <div className="flex items-center gap-4 p-5 cursor-pointer select-none" onClick={() => toggleExpand(group.id)}>
-                    <div className="p-2.5 bg-primary/10 text-primary rounded-xl shrink-0">
+                    <div className="p-2.5 bg-purple-400/10 text-purple-400 rounded-xl shrink-0">
                       <FolderKanban className="w-5 h-5" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -102,8 +102,8 @@ export default function GroupsPage() {
                         <p className="text-sm text-muted-foreground truncate mt-0.5">{group.description}</p>
                       )}
                       <div className="flex items-center gap-3 mt-2">
-                        {items.commands.length > 0 && <CountBadge icon={<Terminal className="w-3 h-3" />} count={items.commands.length} label="Commands" color="text-primary" />}
-                        {items.chains.length > 0 && <CountBadge icon={<Layers className="w-3 h-3" />} count={items.chains.length} label="Chains" color="text-accent-foreground" />}
+                        {items.commands.length > 0 && <CountBadge icon={<Terminal className="w-3 h-3" />} count={items.commands.length} label="Commands" color="text-purple-400" />}
+                        {items.chains.length > 0 && <CountBadge icon={<Layers className="w-3 h-3" />} count={items.chains.length} label="Chains" color="text-purple-400" />}
                         {items.registry.length > 0 && <CountBadge icon={<DatabaseZap className="w-3 h-3" />} count={items.registry.length} label="Registry" color="text-orange-400" />}
                         {totalCount === 0 && <span className="text-xs text-muted-foreground italic">Empty group</span>}
                       </div>
@@ -139,15 +139,15 @@ export default function GroupsPage() {
                         <div className="p-5 space-y-4">
                           {items.commands.length > 0 && (
                             <ItemSection
-                              title="Commands" icon={<Terminal className="w-4 h-4 text-primary" />}
-                              headerClass="bg-primary/5 border-primary/20 text-primary"
+                              title="Commands" icon={<Terminal className="w-4 h-4 text-purple-400" />}
+                              headerClass="bg-purple-400/5 border-purple-400/20 text-purple-400"
                               items={items.commands.map(c => ({ id: c.id, name: c.name, detail: c.command }))}
                             />
                           )}
                           {items.chains.length > 0 && (
                             <ItemSection
-                              title="Command Chains" icon={<Layers className="w-4 h-4 text-accent-foreground" />}
-                              headerClass="bg-accent/5 border-accent/20 text-accent-foreground"
+                              title="Command Chains" icon={<Layers className="w-4 h-4 text-purple-400" />}
+                              headerClass="bg-purple-400/5 border-purple-400/20 text-purple-400"
                               items={items.chains.map(c => ({ id: c.id, name: c.name, detail: `${c.steps.length} step${c.steps.length !== 1 ? 's' : ''}` }))}
                             />
                           )}
