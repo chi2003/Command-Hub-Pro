@@ -7,7 +7,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Command } from "@/lib/store";
-import { ShieldAlert, Copy, Check, Edit2, Play } from "lucide-react";
+import { ShieldAlert, Copy, Check, Edit2, Play, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { CategoryBadge } from "@/components/category-badge";
 import { ShellIcon } from "@/components/shell-icon";
@@ -18,9 +18,10 @@ type DetailDialogProps = {
   onOpenChange: (open: boolean) => void;
   onEdit?: (cmd: Command) => void;
   onRun?: (cmd: Command) => void;
+  onDelete?: (id: string) => void;
 };
 
-export function DetailDialog({ command, open, onOpenChange, onEdit, onRun }: DetailDialogProps) {
+export function DetailDialog({ command, open, onOpenChange, onEdit, onRun, onDelete }: DetailDialogProps) {
   const [copied, setCopied] = useState(false);
 
   if (!command) return null;
@@ -29,6 +30,13 @@ export function DetailDialog({ command, open, onOpenChange, onEdit, onRun }: Det
     navigator.clipboard.writeText(command.command);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDelete = () => {
+    if (window.confirm(`Delete "${command.name}"? This cannot be undone.`)) {
+      onOpenChange(false);
+      onDelete?.(command.id);
+    }
   };
 
   return (
@@ -82,7 +90,12 @@ export function DetailDialog({ command, open, onOpenChange, onEdit, onRun }: Det
           </div>
         </div>
 
-        <div className="px-6 pb-6 flex items-center justify-end gap-3">
+        <div className="px-6 pb-6 flex items-center gap-3">
+          {onDelete && (
+            <Button variant="destructive" onClick={handleDelete} className="rounded-xl mr-auto opacity-80 hover:opacity-100">
+              <Trash2 className="w-4 h-4 mr-2" /> Delete
+            </Button>
+          )}
           {onEdit && (
             <Button variant="outline" onClick={() => { onOpenChange(false); onEdit(command); }} className="rounded-xl border-border/50">
               <Edit2 className="w-4 h-4 mr-2" /> Edit

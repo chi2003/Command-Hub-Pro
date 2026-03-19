@@ -4,10 +4,7 @@ import { Command } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, MoreVertical, Edit2, Trash2, Play, ShieldAlert, Loader2 } from "lucide-react";
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Plus, Search, Trash2, Play, ShieldAlert, Loader2 } from "lucide-react";
 import { CommandFormDialog } from "@/components/command-form-dialog";
 import { RunCommandDialog } from "@/components/run-command-dialog";
 import { DetailDialog } from "@/components/detail-dialog";
@@ -24,7 +21,7 @@ function highlightMatch(text: string, query: string) {
     <>
       {parts.map((part, i) =>
         part.toLowerCase() === query.toLowerCase() ? (
-          <mark key={i} className="bg-yellow-400/40 text-yellow-100 rounded-sm not-italic px-0.5">{part}</mark>
+          <span key={i} className="bg-yellow-400/40 text-yellow-100 rounded px-0.5 align-baseline">{part}</span>
         ) : (
           part
         )
@@ -56,7 +53,7 @@ export default function CommandsPage() {
   const handleRun = (cmd: Command) => { setRunningCommand(cmd); setRunOpen(true); };
   const handleDetail = (cmd: Command) => { setDetailCommand(cmd); setDetailOpen(true); };
   const handleDelete = async (id: string) => {
-    if (window.confirm("Delete this command?")) await deleteMutation.mutateAsync(id);
+    await deleteMutation.mutateAsync(id);
   };
 
   return (
@@ -99,33 +96,22 @@ export default function CommandsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 auto-rows-max">
           <AnimatePresence>
             {filteredCommands.map((cmd) => (
-              <motion.div layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.2 }}
-                key={cmd.id} onClick={() => handleDetail(cmd)}
-                className="group bg-card rounded-2xl p-5 border border-border/50 shadow-sm hover:shadow-md hover:border-border transition-all duration-300 flex flex-col h-full relative overflow-hidden cursor-pointer"
+              <motion.div
+                layout
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                whileHover={{ y: -3, transition: { duration: 0.15 } }}
+                transition={{ duration: 0.2 }}
+                key={cmd.id}
+                onClick={() => handleDetail(cmd)}
+                className="group bg-card rounded-2xl p-5 border border-border/50 shadow-sm hover:shadow-lg hover:border-primary/30 transition-shadow duration-300 flex flex-col h-full relative overflow-hidden cursor-pointer"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-                
-                <div className="flex justify-between items-start mb-3 relative z-10">
-                  <div className="flex items-center gap-3">
-                    <ShellIcon shell={cmd.shell} />
-                    <h3 className="font-semibold text-lg line-clamp-1">{highlightMatch(cmd.name, search)}</h3>
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg -mr-2 text-muted-foreground hover:text-foreground">
-                        <MoreVertical className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48 glass rounded-xl border-border/50">
-                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(cmd); }} className="rounded-lg m-1 cursor-pointer">
-                        <Edit2 className="w-4 h-4 mr-2" /> Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator className="bg-border/50 mx-2" />
-                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDelete(cmd.id); }} className="rounded-lg m-1 text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer">
-                        <Trash2 className="w-4 h-4 mr-2" /> Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+
+                <div className="flex items-start mb-3 relative z-10 gap-3">
+                  <ShellIcon shell={cmd.shell} />
+                  <h3 className="font-semibold text-lg line-clamp-1 flex-1 pt-1">{highlightMatch(cmd.name, search)}</h3>
                 </div>
 
                 <p className="text-sm text-muted-foreground mb-4 line-clamp-2 flex-1 relative z-10">
@@ -154,7 +140,14 @@ export default function CommandsPage() {
 
       <CommandFormDialog open={formOpen} onOpenChange={setFormOpen} command={editingCommand} />
       <RunCommandDialog open={runOpen} onOpenChange={setRunOpen} command={runningCommand} />
-      <DetailDialog open={detailOpen} onOpenChange={setDetailOpen} command={detailCommand} onEdit={handleEdit} onRun={handleRun} />
+      <DetailDialog
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        command={detailCommand}
+        onEdit={handleEdit}
+        onRun={handleRun}
+        onDelete={(id) => { setDetailOpen(false); handleDelete(id); }}
+      />
     </div>
   );
 }

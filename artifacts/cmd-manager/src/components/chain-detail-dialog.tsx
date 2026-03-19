@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { CommandChain } from "@/lib/store";
-import { Copy, Check, Edit2, Play, ListOrdered } from "lucide-react";
+import { Copy, Check, Edit2, Play, ListOrdered, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CategoryBadge } from "@/components/category-badge";
@@ -18,6 +18,7 @@ type ChainDetailDialogProps = {
   onOpenChange: (open: boolean) => void;
   onEdit?: (chain: CommandChain) => void;
   onRun?: (chain: CommandChain) => void;
+  onDelete?: (id: string) => void;
 };
 
 function CopyableCommand({ command }: { command: string }) {
@@ -44,8 +45,15 @@ function CopyableCommand({ command }: { command: string }) {
   );
 }
 
-export function ChainDetailDialog({ chain, open, onOpenChange, onEdit, onRun }: ChainDetailDialogProps) {
+export function ChainDetailDialog({ chain, open, onOpenChange, onEdit, onRun, onDelete }: ChainDetailDialogProps) {
   if (!chain) return null;
+
+  const handleDelete = () => {
+    if (window.confirm(`Delete "${chain.name}"? This cannot be undone.`)) {
+      onOpenChange(false);
+      onDelete?.(chain.id);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -84,7 +92,12 @@ export function ChainDetailDialog({ chain, open, onOpenChange, onEdit, onRun }: 
           </div>
         </ScrollArea>
 
-        <div className="px-6 pb-6 pt-4 border-t border-border/30 flex items-center justify-end gap-3 shrink-0">
+        <div className="px-6 pb-6 pt-4 border-t border-border/30 flex items-center gap-3 shrink-0">
+          {onDelete && (
+            <Button variant="destructive" onClick={handleDelete} className="rounded-xl mr-auto opacity-80 hover:opacity-100">
+              <Trash2 className="w-4 h-4 mr-2" /> Delete
+            </Button>
+          )}
           {onEdit && (
             <Button variant="outline" onClick={() => { onOpenChange(false); onEdit(chain); }} className="rounded-xl border-border/50">
               <Edit2 className="w-4 h-4 mr-2" /> Edit

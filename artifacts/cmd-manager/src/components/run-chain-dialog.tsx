@@ -67,44 +67,43 @@ export function RunChainDialog({ chain, open, onOpenChange }: RunChainDialogProp
         </DialogHeader>
 
         <ScrollArea className="flex-1 p-6">
-          <div className="space-y-6">
-            <div className="relative pl-6 space-y-8 before:absolute before:inset-y-0 before:left-[11px] before:w-0.5 before:bg-border/60">
-              {chain.steps.map((step, index) => {
-                const isLast = index === lastIndex;
-                return (
-                  <div key={step.id} className="relative">
-                    <div className={`absolute -left-[25px] top-0 w-6 h-6 rounded-full bg-background border-2 flex items-center justify-center shadow-sm z-10 ${isLast ? 'border-blue-500/60 shadow-blue-500/20' : 'border-primary shadow-primary/20'}`}>
-                      <span className={`text-[10px] font-bold ${isLast ? 'text-blue-400' : 'text-primary'}`}>{index + 1}</span>
-                    </div>
+          <div className="space-y-5">
+            {chain.steps.map((step, index) => {
+              const isLast = index === lastIndex;
+              return (
+                <div key={step.id}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-[10px] font-bold shrink-0 bg-background shadow-sm ${isLast ? 'border-blue-500/60 text-blue-400 shadow-blue-500/20' : 'border-primary text-primary shadow-primary/20'}`}>
+                      {index + 1}
+                    </span>
+                    <h4 className="text-sm font-semibold text-foreground">{step.prefix}</h4>
+                  </div>
 
-                    <h4 className="text-sm font-semibold text-foreground mb-3 ml-4">{step.prefix}</h4>
-
-                    <div className="relative group">
-                      <div className="bg-[#0D1117] rounded-xl border border-gray-800 overflow-hidden">
-                        <div className="flex justify-between items-center px-4 py-2 bg-gray-900 border-b border-gray-800">
-                          <span className="text-xs font-mono text-gray-400">
-                            {chain.shell === "powershell" ? "PowerShell" : "Command Prompt"}
-                            {isLast && <span className="ml-2 text-blue-400/80 text-[11px]">— auto-copied to clipboard</span>}
-                          </span>
-                          <button
-                            onClick={() => handleCopySingle(step.command, step.id)}
-                            className="text-gray-400 hover:text-white transition-colors flex items-center gap-1 text-xs"
-                          >
-                            {copiedId === step.id
-                              ? <Check className="w-3 h-3 text-green-400" />
-                              : <Copy className="w-3 h-3" />}
-                          </button>
-                        </div>
-                        <div className="p-4 font-mono text-sm overflow-x-auto text-blue-300">
-                          <span className="text-green-400 mr-2 select-none">&gt;</span>
-                          {step.command}
-                        </div>
+                  <div className="pl-8">
+                    <div className="bg-[#0D1117] rounded-xl border border-gray-800 overflow-hidden">
+                      <div className="flex justify-between items-center px-4 py-2 bg-gray-900 border-b border-gray-800">
+                        <span className="text-xs font-mono text-gray-400">
+                          {chain.shell === "powershell" ? "PowerShell" : "Command Prompt"}
+                          {isLast && <span className="ml-2 text-blue-400/80 text-[11px]">— auto-copied to clipboard</span>}
+                        </span>
+                        <button
+                          onClick={() => handleCopySingle(step.command, step.id)}
+                          className="text-gray-400 hover:text-white transition-colors flex items-center gap-1 text-xs"
+                        >
+                          {copiedId === step.id
+                            ? <Check className="w-3 h-3 text-green-400" />
+                            : <Copy className="w-3 h-3" />}
+                        </button>
+                      </div>
+                      <div className="p-4 font-mono text-sm overflow-x-auto text-blue-300">
+                        <span className="text-green-400 mr-2 select-none">&gt;</span>
+                        {step.command}
                       </div>
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })}
           </div>
         </ScrollArea>
 

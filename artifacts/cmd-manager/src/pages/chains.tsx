@@ -3,10 +3,7 @@ import { useChains, useDeleteChain } from "@/hooks/use-chains";
 import { CommandChain } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, MoreVertical, Edit2, Trash2, Play, Loader2, ListOrdered } from "lucide-react";
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Plus, Search, Play, Loader2, ListOrdered } from "lucide-react";
 import { ChainFormDialog } from "@/components/chain-form-dialog";
 import { RunChainDialog } from "@/components/run-chain-dialog";
 import { ChainDetailDialog } from "@/components/chain-detail-dialog";
@@ -23,7 +20,7 @@ function highlightMatch(text: string, query: string) {
     <>
       {parts.map((part, i) =>
         part.toLowerCase() === query.toLowerCase() ? (
-          <mark key={i} className="bg-yellow-400/40 text-yellow-100 rounded-sm not-italic px-0.5">{part}</mark>
+          <span key={i} className="bg-yellow-400/40 text-yellow-100 rounded px-0.5 align-baseline">{part}</span>
         ) : (
           part
         )
@@ -55,7 +52,7 @@ export default function ChainsPage() {
   const handleRun = (chain: CommandChain) => { setRunningChain(chain); setRunOpen(true); };
   const handleDetail = (chain: CommandChain) => { setDetailChain(chain); setDetailOpen(true); };
   const handleDelete = async (id: string) => {
-    if (window.confirm("Delete this chain workflow?")) await deleteMutation.mutateAsync(id);
+    await deleteMutation.mutateAsync(id);
   };
 
   return (
@@ -98,41 +95,30 @@ export default function ChainsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 auto-rows-max">
           <AnimatePresence>
             {filteredChains.map((chain) => (
-              <motion.div layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.2 }}
-                key={chain.id} onClick={() => handleDetail(chain)}
-                className="group bg-card rounded-2xl p-6 border border-border/50 shadow-sm hover:shadow-md hover:border-border transition-all duration-300 flex flex-col h-full relative overflow-hidden cursor-pointer"
+              <motion.div
+                layout
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                whileHover={{ y: -3, transition: { duration: 0.15 } }}
+                transition={{ duration: 0.2 }}
+                key={chain.id}
+                onClick={() => handleDetail(chain)}
+                className="group bg-card rounded-2xl p-6 border border-border/50 shadow-sm hover:shadow-lg hover:border-primary/30 transition-shadow duration-300 flex flex-col h-full relative overflow-hidden cursor-pointer"
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
-                <div className="flex justify-between items-start mb-3 relative z-10">
-                  <div className="flex items-center gap-3">
-                    <ShellIcon shell={chain.shell} />
-                    <div>
-                      <h3 className="font-semibold text-lg line-clamp-1">{highlightMatch(chain.name, search)}</h3>
-                      <div className="flex items-center text-xs text-muted-foreground mt-0.5 gap-2">
-                        <span className="flex items-center gap-1"><ListOrdered className="w-3 h-3" /> {chain.steps.length} Steps</span>
-                      </div>
+                <div className="flex items-start mb-3 relative z-10 gap-3">
+                  <ShellIcon shell={chain.shell} />
+                  <div className="flex-1 pt-1">
+                    <h3 className="font-semibold text-lg line-clamp-1">{highlightMatch(chain.name, search)}</h3>
+                    <div className="flex items-center text-xs text-muted-foreground mt-0.5 gap-2">
+                      <span className="flex items-center gap-1"><ListOrdered className="w-3 h-3" /> {chain.steps.length} Steps</span>
                     </div>
                   </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg -mr-2 text-muted-foreground hover:text-foreground">
-                        <MoreVertical className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48 glass rounded-xl border-border/50">
-                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(chain); }} className="rounded-lg m-1 cursor-pointer">
-                        <Edit2 className="w-4 h-4 mr-2" /> Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator className="bg-border/50 mx-2" />
-                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDelete(chain.id); }} className="rounded-lg m-1 text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer">
-                        <Trash2 className="w-4 h-4 mr-2" /> Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
                 </div>
 
-                <p className="text-sm text-muted-foreground mb-5 line-clamp-2 relative z-10 pl-[60px]">
+                <p className="text-sm text-muted-foreground mb-5 line-clamp-2 relative z-10">
                   {highlightMatch(chain.description, search)}
                 </p>
 
@@ -151,7 +137,14 @@ export default function ChainsPage() {
 
       <ChainFormDialog open={formOpen} onOpenChange={setFormOpen} chain={editingChain} />
       <RunChainDialog open={runOpen} onOpenChange={setRunOpen} chain={runningChain} />
-      <ChainDetailDialog open={detailOpen} onOpenChange={setDetailOpen} chain={detailChain} onEdit={handleEdit} onRun={handleRun} />
+      <ChainDetailDialog
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        chain={detailChain}
+        onEdit={handleEdit}
+        onRun={handleRun}
+        onDelete={(id) => { setDetailOpen(false); handleDelete(id); }}
+      />
     </div>
   );
 }

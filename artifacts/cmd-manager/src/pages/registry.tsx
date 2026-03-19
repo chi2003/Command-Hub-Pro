@@ -4,10 +4,7 @@ import { Command } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, DatabaseZap, MoreVertical, Edit2, Trash2, Play, ShieldAlert, Loader2, AlertTriangle } from "lucide-react";
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Plus, Search, DatabaseZap, Play, ShieldAlert, Loader2, AlertTriangle } from "lucide-react";
 import { CommandFormDialog } from "@/components/command-form-dialog";
 import { RunCommandDialog } from "@/components/run-command-dialog";
 import { DetailDialog } from "@/components/detail-dialog";
@@ -15,6 +12,23 @@ import { CategoryBadge } from "@/components/category-badge";
 import { CategoryFilter } from "@/components/category-filter";
 import { ShellIcon } from "@/components/shell-icon";
 import { motion, AnimatePresence } from "framer-motion";
+
+function highlightMatch(text: string, query: string) {
+  if (!query.trim()) return <>{text}</>;
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.toLowerCase() === query.toLowerCase() ? (
+          <span key={i} className="bg-yellow-400/40 text-yellow-100 rounded px-0.5 align-baseline">{part}</span>
+        ) : (
+          part
+        )
+      )}
+    </>
+  );
+}
 
 export default function RegistryPage() {
   const { data: commands = [], isLoading } = useRegistryCommands();
@@ -41,12 +55,11 @@ export default function RegistryPage() {
   const handleRun = (cmd: Command) => { setRunningCommand(cmd); setRunOpen(true); };
   const handleDetail = (cmd: Command) => { setDetailCommand(cmd); setDetailOpen(true); };
   const handleDelete = async (id: string) => {
-    if (window.confirm("Delete this registry command?")) await deleteMutation.mutateAsync(id);
+    await deleteMutation.mutateAsync(id);
   };
 
   return (
     <div className="h-full flex flex-col p-6 lg:p-8 max-w-7xl mx-auto w-full">
-      {/* Header — matches Commands/Chains vertical spacing */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
@@ -55,12 +68,11 @@ export default function RegistryPage() {
           </h1>
           <p className="text-muted-foreground mt-1">Windows Registry commands using reg.exe.</p>
         </div>
-        <Button onClick={handleAdd} className="rounded-xl bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/20 hover-elevate px-6 shrink-0">
+        <Button onClick={handleAdd} className="rounded-xl bg-orange-500 hover:bg-orange-600 text-white border border-orange-500 hover:border-orange-300 shadow-lg shadow-orange-500/20 hover-elevate px-6 shrink-0 transition-colors">
           <Plus className="w-5 h-5 mr-2" /> New Registry Command
         </Button>
       </div>
 
-      {/* Search + filter — same vertical position as Commands/Chains */}
       <div className="flex gap-3 mb-4">
         <div className="relative flex-1">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -70,7 +82,6 @@ export default function RegistryPage() {
         <CategoryFilter value={categoryFilter} onChange={setCategoryFilter} />
       </div>
 
-      {/* Warning — below search */}
       <div className="flex items-start gap-3 mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
         <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
         <p className="text-sm text-amber-600 dark:text-amber-400 leading-relaxed">
@@ -97,36 +108,27 @@ export default function RegistryPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 auto-rows-max">
           <AnimatePresence>
             {filteredCommands.map((cmd) => (
-              <motion.div layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.2 }}
-                key={cmd.id} onClick={() => handleDetail(cmd)}
-                className="group bg-card rounded-2xl p-5 border border-border/50 shadow-sm hover:shadow-md hover:border-orange-400/30 transition-all duration-300 flex flex-col h-full relative overflow-hidden cursor-pointer"
+              <motion.div
+                layout
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                whileHover={{ y: -3, transition: { duration: 0.15 } }}
+                transition={{ duration: 0.2 }}
+                key={cmd.id}
+                onClick={() => handleDetail(cmd)}
+                className="group bg-card rounded-2xl p-5 border border-border/50 shadow-sm hover:shadow-lg hover:border-orange-400/30 transition-shadow duration-300 flex flex-col h-full relative overflow-hidden cursor-pointer"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
-                <div className="flex justify-between items-start mb-3 relative z-10">
-                  <div className="flex items-center gap-3">
-                    <ShellIcon shell={cmd.shell} />
-                    <h3 className="font-semibold text-lg line-clamp-1">{cmd.name}</h3>
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg -mr-2 text-muted-foreground hover:text-foreground">
-                        <MoreVertical className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48 glass rounded-xl border-border/50">
-                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(cmd); }} className="rounded-lg m-1 cursor-pointer">
-                        <Edit2 className="w-4 h-4 mr-2" /> Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator className="bg-border/50 mx-2" />
-                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDelete(cmd.id); }} className="rounded-lg m-1 text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer">
-                        <Trash2 className="w-4 h-4 mr-2" /> Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                <div className="flex items-start mb-3 relative z-10 gap-3">
+                  <ShellIcon shell={cmd.shell} />
+                  <h3 className="font-semibold text-lg line-clamp-1 flex-1 pt-1">{highlightMatch(cmd.name, search)}</h3>
                 </div>
 
-                <p className="text-sm text-muted-foreground mb-4 line-clamp-2 flex-1 relative z-10">{cmd.description}</p>
+                <p className="text-sm text-muted-foreground mb-4 line-clamp-2 flex-1 relative z-10">
+                  {highlightMatch(cmd.description, search)}
+                </p>
 
                 <div className="flex items-center justify-between pt-4 border-t border-border/30 mt-auto relative z-10 gap-3">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -152,7 +154,14 @@ export default function RegistryPage() {
         onCreate={(data) => createMutation.mutateAsync(data)}
         onUpdate={(data) => updateMutation.mutateAsync(data)} />
       <RunCommandDialog open={runOpen} onOpenChange={setRunOpen} command={runningCommand} />
-      <DetailDialog open={detailOpen} onOpenChange={setDetailOpen} command={detailCommand} onEdit={handleEdit} onRun={handleRun} />
+      <DetailDialog
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        command={detailCommand}
+        onEdit={handleEdit}
+        onRun={handleRun}
+        onDelete={(id) => { setDetailOpen(false); handleDelete(id); }}
+      />
     </div>
   );
 }
