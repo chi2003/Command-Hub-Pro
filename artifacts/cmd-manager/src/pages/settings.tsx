@@ -1,22 +1,31 @@
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { getStoreData, setStoreData, clearStoreData, AppData } from "@/lib/store";
-import { Download, Upload, FileJson, FileSpreadsheet, Trash2, Database, DatabaseZap } from "lucide-react";
+import {
+  CATEGORIES, COLOR_PALETTE, PaletteColor, CustomCategory,
+  getCustomCategories, saveCustomCategories, getAllCategoryNames,
+} from "@/lib/categories";
+import { CategoryBadge } from "@/components/category-badge";
+import { Download, Upload, FileJson, FileSpreadsheet, Trash2, Database, DatabaseZap, Tag, Plus, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Papa from "papaparse";
 import { useQueryClient } from "@tanstack/react-query";
 import { v4 as uuidv4 } from "uuid";
 
+const COLOR_HEX: Record<PaletteColor, string> = {
+  blue:   '#3b82f6', slate:  '#64748b', amber:  '#f59e0b', red:    '#ef4444',
+  purple: '#a855f7', cyan:   '#06b6d4', pink:   '#ec4899', green:  '#22c55e',
+  orange: '#f97316', yellow: '#eab308', indigo: '#6366f1', teal:   '#14b8a6',
+};
+
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 
 function commandsToCsv(commands: AppData["commands"]) {
@@ -48,7 +57,33 @@ export default function SettingsPage() {
   const [isImporting, setIsImporting] = useState(false);
   const [isImportingRegistry, setIsImportingRegistry] = useState(false);
 
+  const [customCats, setCustomCats] = useState<CustomCategory[]>(() => getCustomCategories());
+  const [newCatName, setNewCatName] = useState("");
+  const [newCatColor, setNewCatColor] = useState<PaletteColor>("blue");
+
   const date = new Date().toISOString().split('T')[0];
+
+  const handleAddCategory = () => {
+    const name = newCatName.trim().toLowerCase().replace(/\s+/g, '-');
+    if (!name) return;
+    const allNames = [...CATEGORIES as readonly string[], ...customCats.map(c => c.name)];
+    if (allNames.includes(name)) {
+      toast({ variant: "destructive", title: "Category already exists", description: `"${name}" is already a category.` });
+      return;
+    }
+    const updated = [...customCats, { name, color: newCatColor }];
+    saveCustomCategories(updated);
+    setCustomCats(updated);
+    setNewCatName("");
+    toast({ title: "Category added", description: `"${name}" is now available.` });
+  };
+
+  const handleDeleteCategory = (name: string) => {
+    const updated = customCats.filter(c => c.name !== name);
+    saveCustomCategories(updated);
+    setCustomCats(updated);
+    toast({ title: "Category removed", description: `"${name}" has been deleted.` });
+  };
 
   const handleExportJson = () => {
     const data = getStoreData();
@@ -115,8 +150,7 @@ export default function SettingsPage() {
         if (file.name.endsWith('.json')) {
           const parsed = JSON.parse(content) as AppData;
           if (parsed.commands && parsed.chains) {
-            setStoreData(parsed);
-            await queryClient.invalidateQueries();
+            setStoreData(parsed); await queryClient.invalidateQueries();
             toast({ title: "Import Successful", description: "JSON data has been loaded." });
           } else throw new Error("Invalid JSON structure");
         } else if (file.name.endsWith('.csv')) {
@@ -139,12 +173,8 @@ export default function SettingsPage() {
             error: (err) => { throw err; }
           });
         }
-      } catch (err) {
-        toast({ variant: "destructive", title: "Import Failed", description: "Could not parse file." });
-      } finally {
-        setIsImporting(false);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-      }
+      } catch { toast({ variant: "destructive", title: "Import Failed", description: "Could not parse file." }); }
+      finally { setIsImporting(false); if (fileInputRef.current) fileInputRef.current.value = ''; }
     };
     reader.readAsText(file);
   };
@@ -183,23 +213,24 @@ export default function SettingsPage() {
             toast({ title: "Registry JSON Imported", description: `Added ${parsed.length} command(s).` });
           } else throw new Error("Expected JSON array");
         }
-      } catch (err) {
-        toast({ variant: "destructive", title: "Registry Import Failed", description: "Could not parse file." });
-      } finally {
-        setIsImportingRegistry(false);
-        if (registryFileInputRef.current) registryFileInputRef.current.value = '';
-      }
+      } catch { toast({ variant: "destructive", title: "Registry Import Failed", description: "Could not parse file." }); }
+      finally { setIsImportingRegistry(false); if (registryFileInputRef.current) registryFileInputRef.current.value = ''; }
     };
     reader.readAsText(file);
   };
 
   const handleClearData = async () => {
     if (window.confirm("WARNING: This will delete ALL your commands, chains, and registry commands. This cannot be undone. Are you sure?")) {
-      clearStoreData();
-      await queryClient.invalidateQueries();
+      clearStoreData(); await queryClient.invalidateQueries();
       toast({ title: "Data Cleared", description: "All local data has been removed. Demo data will reload on next visit." });
     }
   };
+
+  const builtInCats = CATEGORIES as readonly string[];
+  const allCategoryEntries = [
+    ...builtInCats.map(name => ({ name, isBuiltIn: true })),
+    ...customCats.map(c => ({ name: c.name, isBuiltIn: false })),
+  ];
 
   return (
     <div className="h-full flex flex-col p-6 lg:p-8 max-w-4xl mx-auto w-full">
@@ -209,6 +240,83 @@ export default function SettingsPage() {
       </div>
 
       <div className="space-y-6">
+        {/* Category Manager */}
+        <Card className="glass rounded-2xl border-border/50 shadow-sm overflow-hidden">
+          <div className="bg-accent/5 p-6 border-b border-border/50 flex items-center gap-4">
+            <div className="p-3 bg-accent/20 text-accent rounded-xl">
+              <Tag className="w-6 h-6" />
+            </div>
+            <div>
+              <CardTitle className="text-xl">Category Manager</CardTitle>
+              <CardDescription className="text-base mt-1 text-foreground/70">
+                Add custom categories for organizing your commands and chains.
+              </CardDescription>
+            </div>
+          </div>
+          <CardContent className="p-6 space-y-6">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">All Categories</p>
+              <div className="flex flex-wrap gap-2">
+                {allCategoryEntries.map(({ name, isBuiltIn }) => (
+                  <div key={name} className="flex items-center gap-1">
+                    <CategoryBadge category={name} />
+                    {!isBuiltIn && (
+                      <button
+                        onClick={() => handleDeleteCategory(name)}
+                        className="w-4 h-4 rounded-full flex items-center justify-center text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                        title={`Remove "${name}"`}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="border-t border-border/50 pt-5 space-y-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Add New Category</p>
+              <Input
+                placeholder="Category name (e.g. scripting)"
+                value={newCatName}
+                onChange={e => setNewCatName(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                onKeyDown={e => { if (e.key === 'Enter') handleAddCategory(); }}
+                className="rounded-xl"
+              />
+              <div>
+                <p className="text-xs text-muted-foreground mb-2">Pick a color</p>
+                <div className="flex gap-2 flex-wrap">
+                  {(Object.entries(COLOR_HEX) as [PaletteColor, string][]).map(([key, hex]) => (
+                    <button
+                      key={key}
+                      onClick={() => setNewCatColor(key)}
+                      title={key}
+                      className={`w-7 h-7 rounded-full border-2 transition-all ${newCatColor === key ? 'ring-2 ring-offset-2 ring-primary ring-offset-background scale-110' : 'border-transparent hover:scale-105'}`}
+                      style={{ backgroundColor: hex + '33', borderColor: hex + '80' }}
+                    >
+                      <span className="sr-only">{key}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Button
+                  onClick={handleAddCategory}
+                  disabled={!newCatName.trim()}
+                  className="rounded-xl bg-accent text-accent-foreground hover:bg-accent/90"
+                >
+                  <Plus className="w-4 h-4 mr-2" /> Add Category
+                </Button>
+                {newCatName.trim() && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    Preview: <CategoryBadge category={newCatName.trim()} />
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Main Library */}
         <Card className="glass rounded-2xl border-border/50 shadow-sm overflow-hidden">
           <div className="bg-primary/5 p-6 border-b border-border/50 flex items-center gap-4">
@@ -249,17 +357,13 @@ export default function SettingsPage() {
                 </div>
               </Button>
             </div>
-
             <div className="space-y-3">
               <h3 className="font-semibold flex items-center gap-2 text-muted-foreground text-sm">
                 <Upload className="w-4 h-4" /> Import
               </h3>
               <input type="file" accept=".json,.csv" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
-              <Button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isImporting}
-                className="w-full h-12 rounded-xl bg-secondary text-foreground hover:bg-secondary/80 border border-border/50"
-              >
+              <Button onClick={() => fileInputRef.current?.click()} disabled={isImporting}
+                className="w-full h-12 rounded-xl bg-secondary text-foreground hover:bg-secondary/80 border border-border/50">
                 <Upload className="w-5 h-5 mr-2" />
                 {isImporting ? "Importing..." : "Select File (JSON/CSV)"}
               </Button>
@@ -308,11 +412,8 @@ export default function SettingsPage() {
                 <Upload className="w-4 h-4" /> Import
               </h3>
               <input type="file" accept=".json,.csv" className="hidden" ref={registryFileInputRef} onChange={handleRegistryFileChange} />
-              <Button
-                onClick={() => registryFileInputRef.current?.click()}
-                disabled={isImportingRegistry}
-                className="w-full h-12 rounded-xl bg-secondary text-foreground hover:bg-secondary/80 border border-border/50"
-              >
+              <Button onClick={() => registryFileInputRef.current?.click()} disabled={isImportingRegistry}
+                className="w-full h-12 rounded-xl bg-secondary text-foreground hover:bg-secondary/80 border border-border/50">
                 <Upload className="w-5 h-5 mr-2" />
                 {isImportingRegistry ? "Importing..." : "Select Registry CSV/JSON"}
               </Button>
@@ -334,11 +435,8 @@ export default function SettingsPage() {
                 Permanently delete all commands, chains, and registry commands from local storage. Demo data reloads on next visit.
               </p>
             </div>
-            <Button
-              variant="destructive"
-              onClick={handleClearData}
-              className="rounded-xl px-6 w-full sm:w-auto shadow-lg shadow-destructive/20 hover-elevate"
-            >
+            <Button variant="destructive" onClick={handleClearData}
+              className="rounded-xl px-6 w-full sm:w-auto shadow-lg shadow-destructive/20 hover-elevate">
               Clear All Data
             </Button>
           </CardContent>

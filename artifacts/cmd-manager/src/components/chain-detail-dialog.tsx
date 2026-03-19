@@ -94,7 +94,11 @@ export function ChainDetailDialog({ chain, open, onOpenChange, onEdit, onRun, on
 
         <div className="px-6 pb-6 pt-4 border-t border-border/30 flex items-center gap-3 shrink-0">
           {onDelete && (
-            <Button variant="destructive" onClick={handleDelete} className="rounded-xl mr-auto opacity-80 hover:opacity-100">
+            <Button
+              variant="outline"
+              onClick={handleDelete}
+              className="rounded-xl mr-auto border-red-500/50 text-red-500 hover:bg-red-500/10 hover:border-red-500 hover:text-red-500"
+            >
               <Trash2 className="w-4 h-4 mr-2" /> Delete
             </Button>
           )}

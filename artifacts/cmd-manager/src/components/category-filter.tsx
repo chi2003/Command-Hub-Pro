@@ -1,4 +1,4 @@
-import { CATEGORIES } from "@/lib/categories";
+import { CATEGORIES, getCustomCategories } from "@/lib/categories";
 import {
   Select,
   SelectContent,
@@ -15,6 +15,9 @@ type CategoryFilterProps = {
 };
 
 export function CategoryFilter({ value, onChange, className }: CategoryFilterProps) {
+  const customCats = getCustomCategories();
+  const allCats = [...CATEGORIES, ...customCats.map(c => c.name)];
+
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger className={`w-44 rounded-xl bg-card border-border/50 h-12 shrink-0 focus:ring-primary/20 ${className ?? ""}`}>
@@ -25,7 +28,7 @@ export function CategoryFilter({ value, onChange, className }: CategoryFilterPro
       </SelectTrigger>
       <SelectContent className="glass rounded-xl border-border/50">
         <SelectItem value="all" className="rounded-lg cursor-pointer capitalize">All Categories</SelectItem>
-        {CATEGORIES.map(cat => (
+        {allCats.map(cat => (
           <SelectItem key={cat} value={cat} className="rounded-lg cursor-pointer capitalize">
             {cat.charAt(0).toUpperCase() + cat.slice(1)}
           </SelectItem>

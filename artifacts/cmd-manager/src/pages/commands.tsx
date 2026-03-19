@@ -4,7 +4,7 @@ import { Command } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Trash2, Play, ShieldAlert, Loader2 } from "lucide-react";
+import { Plus, Search, Play, ShieldAlert, Loader2 } from "lucide-react";
 import { CommandFormDialog } from "@/components/command-form-dialog";
 import { RunCommandDialog } from "@/components/run-command-dialog";
 import { DetailDialog } from "@/components/detail-dialog";
@@ -22,9 +22,7 @@ function highlightMatch(text: string, query: string) {
       {parts.map((part, i) =>
         part.toLowerCase() === query.toLowerCase() ? (
           <span key={i} className="bg-yellow-400/40 text-yellow-100 rounded px-0.5 align-baseline">{part}</span>
-        ) : (
-          part
-        )
+        ) : part
       )}
     </>
   );
@@ -52,9 +50,7 @@ export default function CommandsPage() {
   const handleEdit = (cmd: Command) => { setEditingCommand(cmd); setFormOpen(true); };
   const handleRun = (cmd: Command) => { setRunningCommand(cmd); setRunOpen(true); };
   const handleDetail = (cmd: Command) => { setDetailCommand(cmd); setDetailOpen(true); };
-  const handleDelete = async (id: string) => {
-    await deleteMutation.mutateAsync(id);
-  };
+  const handleDelete = async (id: string) => { await deleteMutation.mutateAsync(id); };
 
   return (
     <div className="h-full flex flex-col p-6 lg:p-8 max-w-7xl mx-auto w-full">
@@ -109,9 +105,17 @@ export default function CommandsPage() {
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
-                <div className="flex items-start mb-3 relative z-10 gap-3">
+                {cmd.requiresAdmin && (
+                  <div className="absolute top-3 right-3 z-20">
+                    <Badge variant="outline" className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 gap-1 rounded-lg px-2 py-0.5 text-xs">
+                      <ShieldAlert className="w-3 h-3" /> Admin
+                    </Badge>
+                  </div>
+                )}
+
+                <div className="flex items-center mb-3 relative z-10 gap-3">
                   <ShellIcon shell={cmd.shell} />
-                  <h3 className="font-semibold text-lg line-clamp-1 flex-1 pt-1">{highlightMatch(cmd.name, search)}</h3>
+                  <h3 className="font-semibold text-lg line-clamp-1 flex-1">{highlightMatch(cmd.name, search)}</h3>
                 </div>
 
                 <p className="text-sm text-muted-foreground mb-4 line-clamp-2 flex-1 relative z-10">
@@ -119,14 +123,7 @@ export default function CommandsPage() {
                 </p>
 
                 <div className="flex items-center justify-between pt-4 border-t border-border/30 mt-auto relative z-10 gap-3">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <CategoryBadge category={cmd.category} />
-                    {cmd.requiresAdmin && (
-                      <Badge variant="outline" className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 gap-1 rounded-lg px-2 py-0.5">
-                        <ShieldAlert className="w-3 h-3" /> Admin
-                      </Badge>
-                    )}
-                  </div>
+                  <CategoryBadge category={cmd.category} />
                   <Button size="sm" onClick={e => { e.stopPropagation(); handleRun(cmd); }}
                     className="rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-colors shrink-0">
                     <Play className="w-4 h-4 mr-1.5" /> Run
