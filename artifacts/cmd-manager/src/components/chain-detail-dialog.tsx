@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { CommandChain } from "@/lib/store";
-import { Layers, Copy, Check, Edit2, Play, ListOrdered, Pencil } from "lucide-react";
+import { Copy, Check, Edit2, Play, ListOrdered } from "lucide-react";
 import { useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CategoryBadge } from "@/components/category-badge";
@@ -20,7 +20,7 @@ type ChainDetailDialogProps = {
   onRun?: (chain: CommandChain) => void;
 };
 
-function CopyableCommand({ command, amber = false }: { command: string; amber?: boolean }) {
+function CopyableCommand({ command }: { command: string }) {
   const [copied, setCopied] = useState(false);
   const handleCopy = () => {
     navigator.clipboard.writeText(command);
@@ -28,8 +28,8 @@ function CopyableCommand({ command, amber = false }: { command: string; amber?: 
     setTimeout(() => setCopied(false), 2000);
   };
   return (
-    <div className={`relative group rounded-lg border overflow-hidden ${amber ? 'bg-amber-500/5 border-amber-500/20' : 'bg-[#0D1117] border-border/30'}`}>
-      <pre className={`p-3 pr-12 text-xs font-mono whitespace-pre-wrap break-all leading-relaxed ${amber ? 'text-amber-200/80' : 'text-blue-300'}`}>
+    <div className="relative group rounded-lg border overflow-hidden bg-[#0D1117] border-border/30">
+      <pre className="p-3 pr-12 text-xs font-mono whitespace-pre-wrap break-all leading-relaxed text-blue-300">
         {command}
       </pre>
       <Button
@@ -47,8 +47,6 @@ function CopyableCommand({ command, amber = false }: { command: string; amber?: 
 export function ChainDetailDialog({ chain, open, onOpenChange, onEdit, onRun }: ChainDetailDialogProps) {
   if (!chain) return null;
 
-  const lastIndex = chain.steps.length - 1;
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] h-[85vh] flex flex-col glass rounded-2xl border-border/50 p-0 overflow-hidden">
@@ -63,11 +61,6 @@ export function ChainDetailDialog({ chain, open, onOpenChange, onEdit, onRun }: 
                 <span className="text-xs text-muted-foreground flex items-center gap-1">
                   <ListOrdered className="w-3 h-3" /> {chain.steps.length} steps
                 </span>
-                {chain.steps.length > 1 && (
-                  <span className="text-xs text-amber-400/70 flex items-center gap-1">
-                    <Pencil className="w-3 h-3" /> Last step pastes
-                  </span>
-                )}
               </div>
             </div>
           </div>
@@ -75,28 +68,19 @@ export function ChainDetailDialog({ chain, open, onOpenChange, onEdit, onRun }: 
 
         <ScrollArea className="flex-1 p-6">
           <div className="space-y-4 pb-2">
-            {chain.steps.map((step, index) => {
-              const isLast = index === lastIndex && chain.steps.length > 1;
-              return (
-                <div key={step.id} className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    {isLast
-                      ? <span className="w-6 h-6 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold flex items-center justify-center shrink-0"><Pencil className="w-3 h-3" /></span>
-                      : <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0">{index + 1}</span>
-                    }
-                    <p className="text-sm font-medium text-foreground">{step.prefix}</p>
-                  </div>
-                  <div className="pl-8">
-                    <CopyableCommand command={step.command} amber={isLast} />
-                  </div>
-                  {isLast && (
-                    <p className="pl-8 text-[11px] text-amber-400/60 leading-relaxed">
-                      Paste this into your terminal after the steps above complete. Fill in any placeholders before pressing Enter.
-                    </p>
-                  )}
+            {chain.steps.map((step, index) => (
+              <div key={step.id} className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0">
+                    {index + 1}
+                  </span>
+                  <p className="text-sm font-medium text-foreground">{step.prefix}</p>
                 </div>
-              );
-            })}
+                <div className="pl-8">
+                  <CopyableCommand command={step.command} />
+                </div>
+              </div>
+            ))}
           </div>
         </ScrollArea>
 

@@ -15,6 +15,23 @@ import { CategoryFilter } from "@/components/category-filter";
 import { ShellIcon } from "@/components/shell-icon";
 import { motion, AnimatePresence } from "framer-motion";
 
+function highlightMatch(text: string, query: string) {
+  if (!query.trim()) return <>{text}</>;
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.toLowerCase() === query.toLowerCase() ? (
+          <mark key={i} className="bg-yellow-400/40 text-yellow-100 rounded-sm not-italic px-0.5">{part}</mark>
+        ) : (
+          part
+        )
+      )}
+    </>
+  );
+}
+
 export default function ChainsPage() {
   const { data: chains = [], isLoading } = useChains();
   const deleteMutation = useDeleteChain();
@@ -46,7 +63,7 @@ export default function ChainsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Command Chains</h1>
-          <p className="text-muted-foreground mt-1">Multi-step workflows — last step pastes to terminal for manual completion.</p>
+          <p className="text-muted-foreground mt-1">Multi-step workflows for sequential command execution.</p>
         </div>
         <Button onClick={handleAdd} className="rounded-xl bg-accent text-accent-foreground shadow-lg shadow-accent/20 hover-elevate px-6">
           <Plus className="w-5 h-5 mr-2" /> New Chain
@@ -81,9 +98,9 @@ export default function ChainsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 auto-rows-max">
           <AnimatePresence>
             {filteredChains.map((chain) => (
-              <motion.div layout initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.2 }}
+              <motion.div layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.2 }}
                 key={chain.id} onClick={() => handleDetail(chain)}
-                className="group bg-card rounded-2xl p-6 border border-border/50 shadow-sm hover:shadow-md hover:border-accent/40 transition-all duration-300 flex flex-col relative overflow-hidden cursor-pointer"
+                className="group bg-card rounded-2xl p-6 border border-border/50 shadow-sm hover:shadow-md hover:border-border transition-all duration-300 flex flex-col relative overflow-hidden cursor-pointer"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
@@ -91,7 +108,7 @@ export default function ChainsPage() {
                   <div className="flex items-center gap-4">
                     <ShellIcon shell={chain.shell} />
                     <div>
-                      <h3 className="font-semibold text-lg line-clamp-1">{chain.name}</h3>
+                      <h3 className="font-semibold text-lg line-clamp-1">{highlightMatch(chain.name, search)}</h3>
                       <div className="flex items-center text-xs text-muted-foreground mt-0.5 gap-2">
                         <span className="flex items-center gap-1"><ListOrdered className="w-3 h-3" /> {chain.steps.length} Steps</span>
                       </div>
@@ -115,7 +132,9 @@ export default function ChainsPage() {
                   </DropdownMenu>
                 </div>
 
-                <p className="text-sm text-muted-foreground mb-5 line-clamp-2 relative z-10 pl-[52px]">{chain.description}</p>
+                <p className="text-sm text-muted-foreground mb-5 line-clamp-2 relative z-10 pl-[60px]">
+                  {highlightMatch(chain.description, search)}
+                </p>
 
                 <div className="flex items-center justify-between pt-4 border-t border-border/30 mt-auto relative z-10 gap-3">
                   <CategoryBadge category={chain.category} />

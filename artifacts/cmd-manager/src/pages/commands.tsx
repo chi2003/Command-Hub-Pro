@@ -16,6 +16,23 @@ import { CategoryFilter } from "@/components/category-filter";
 import { ShellIcon } from "@/components/shell-icon";
 import { motion, AnimatePresence } from "framer-motion";
 
+function highlightMatch(text: string, query: string) {
+  if (!query.trim()) return <>{text}</>;
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.toLowerCase() === query.toLowerCase() ? (
+          <mark key={i} className="bg-yellow-400/40 text-yellow-100 rounded-sm not-italic px-0.5">{part}</mark>
+        ) : (
+          part
+        )
+      )}
+    </>
+  );
+}
+
 export default function CommandsPage() {
   const { data: commands = [], isLoading } = useCommands();
   const deleteMutation = useDeleteCommand();
@@ -91,7 +108,7 @@ export default function CommandsPage() {
                 <div className="flex justify-between items-start mb-3 relative z-10">
                   <div className="flex items-center gap-3">
                     <ShellIcon shell={cmd.shell} />
-                    <h3 className="font-semibold text-lg line-clamp-1">{cmd.name}</h3>
+                    <h3 className="font-semibold text-lg line-clamp-1">{highlightMatch(cmd.name, search)}</h3>
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}>
@@ -111,7 +128,9 @@ export default function CommandsPage() {
                   </DropdownMenu>
                 </div>
 
-                <p className="text-sm text-muted-foreground mb-4 line-clamp-2 flex-1 relative z-10">{cmd.description}</p>
+                <p className="text-sm text-muted-foreground mb-4 line-clamp-2 flex-1 relative z-10">
+                  {highlightMatch(cmd.description, search)}
+                </p>
 
                 <div className="flex items-center justify-between pt-4 border-t border-border/30 mt-auto relative z-10 gap-3">
                   <div className="flex items-center gap-2 flex-wrap">
