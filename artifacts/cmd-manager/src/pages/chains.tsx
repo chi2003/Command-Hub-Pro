@@ -58,7 +58,7 @@ export default function ChainsPage() {
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Command Chains</h1>
           <p className="text-muted-foreground mt-1">Multi-step workflows for sequential command execution.</p>
         </div>
-        <Button onClick={handleAdd} className="rounded-xl bg-accent text-accent-foreground shadow-lg shadow-accent/20 hover-elevate px-6">
+        <Button onClick={handleAdd} className="rounded-xl bg-accent text-accent-foreground shadow-lg shadow-accent/20 hover-elevate px-6 flex items-center justify-center">
           <Plus className="w-5 h-5 mr-2" /> New Chain
         </Button>
       </div>
@@ -122,8 +122,8 @@ export default function ChainsPage() {
                 <div className="flex items-center justify-between pt-4 border-t border-border/30 mt-auto relative z-10 gap-3">
                   <CategoryBadge category={chain.category} />
                   <Button onClick={e => { e.stopPropagation(); handleRun(chain); }}
-                    className="rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-accent-foreground transition-colors shadow-sm hover-elevate" size="sm">
-                    <Play className="w-4 h-4 mr-1.5" /> Run
+                    className="rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-colors shrink-0 flex items-center justify-center" size="sm">
+                    <Play className="w-4 h-4 mr-1.5" /> Run Chain
                   </Button>
                 </div>
               </motion.div>

@@ -8,11 +8,12 @@ import {
   getCustomCategories, saveCustomCategories, getAllCategoryNames,
 } from "@/lib/categories";
 import { CategoryBadge } from "@/components/category-badge";
-import { Download, Upload, FileJson, FileSpreadsheet, Trash2, Database, DatabaseZap, Tag, Plus, X } from "lucide-react";
+import { Download, Upload, FileJson, FileSpreadsheet, Trash2, Database, DatabaseZap, Tag, Plus, X, Edit2, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Papa from "papaparse";
 import { useQueryClient } from "@tanstack/react-query";
 import { v4 as uuidv4 } from "uuid";
+import { cn } from "@/lib/utils";
 
 const COLOR_HEX: Record<PaletteColor, string> = {
   blue:   '#3b82f6', slate:  '#64748b', amber:  '#f59e0b', red:    '#ef4444',
@@ -60,6 +61,7 @@ export default function SettingsPage() {
   const [customCats, setCustomCats] = useState<CustomCategory[]>(() => getCustomCategories());
   const [newCatName, setNewCatName] = useState("");
   const [newCatColor, setNewCatColor] = useState<PaletteColor>("blue");
+  const [editingCat, setEditingCat] = useState<{ original: string; name: string; color: PaletteColor } | null>(null);
 
   const date = new Date().toISOString().split('T')[0];
 
@@ -83,6 +85,26 @@ export default function SettingsPage() {
     saveCustomCategories(updated);
     setCustomCats(updated);
     toast({ title: "Category removed", description: `"${name}" has been deleted.` });
+  };
+
+  const handleStartEdit = (cat: CustomCategory) => {
+    setEditingCat({ original: cat.name, name: cat.name, color: cat.color });
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingCat) return;
+    const trimmed = editingCat.name.trim().toLowerCase().replace(/\s+/g, '-');
+    if (!trimmed) return;
+    const allNames = [...CATEGORIES as readonly string[], ...customCats.filter(c => c.name !== editingCat.original).map(c => c.name)];
+    if (allNames.includes(trimmed)) {
+      toast({ variant: "destructive", title: "Name already used", description: `"${trimmed}" is already a category.` });
+      return;
+    }
+    const updated = customCats.map(c => c.name === editingCat.original ? { name: trimmed, color: editingCat.color } : c);
+    saveCustomCategories(updated);
+    setCustomCats(updated);
+    setEditingCat(null);
+    toast({ title: "Category updated", description: `"${trimmed}" has been saved.` });
   };
 
   const handleExportJson = () => {
@@ -257,20 +279,71 @@ export default function SettingsPage() {
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">All Categories</p>
               <div className="flex flex-wrap gap-2">
-                {allCategoryEntries.map(({ name, isBuiltIn }) => (
-                  <div key={name} className="flex items-center gap-1">
-                    <CategoryBadge category={name} />
-                    {!isBuiltIn && (
-                      <button
-                        onClick={() => handleDeleteCategory(name)}
-                        className="w-4 h-4 rounded-full flex items-center justify-center text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                        title={`Remove "${name}"`}
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    )}
-                  </div>
-                ))}
+                {allCategoryEntries.map(({ name, isBuiltIn }) => {
+                  const isEditing = editingCat?.original === name;
+                  return (
+                    <div key={name} className="flex items-center gap-1">
+                      {isEditing ? (
+                        <div className="flex items-center gap-2 bg-secondary/50 border border-border/60 rounded-xl px-3 py-2">
+                          <Input
+                            value={editingCat.name}
+                            onChange={e => setEditingCat(prev => prev ? { ...prev, name: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') } : null)}
+                            onKeyDown={e => { if (e.key === 'Enter') handleSaveEdit(); if (e.key === 'Escape') setEditingCat(null); }}
+                            className="h-6 text-xs rounded-md px-2 w-28 border-border/50"
+                            autoFocus
+                          />
+                          <div className="flex gap-1">
+                            {(Object.entries(COLOR_HEX) as [PaletteColor, string][]).map(([key, hex]) => (
+                              <button
+                                key={key}
+                                onClick={() => setEditingCat(prev => prev ? { ...prev, color: key } : null)}
+                                title={key}
+                                className={`w-4 h-4 rounded-full border transition-all ${editingCat.color === key ? 'ring-1 ring-offset-1 ring-primary ring-offset-background scale-110' : 'border-transparent hover:scale-105'}`}
+                                style={{ backgroundColor: hex + '55', borderColor: hex + '80' }}
+                              />
+                            ))}
+                          </div>
+                          <button
+                            onClick={handleSaveEdit}
+                            className="w-5 h-5 rounded-full flex items-center justify-center text-green-400 hover:bg-green-500/10 transition-colors"
+                            title="Save"
+                          >
+                            <Check className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={() => setEditingCat(null)}
+                            className="w-5 h-5 rounded-full flex items-center justify-center text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                            title="Cancel"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <CategoryBadge category={name} />
+                          {!isBuiltIn && (
+                            <>
+                              <button
+                                onClick={() => handleStartEdit(customCats.find(c => c.name === name)!)}
+                                className="w-4 h-4 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                                title={`Edit "${name}"`}
+                              >
+                                <Edit2 className="w-2.5 h-2.5" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteCategory(name)}
+                                className="w-4 h-4 rounded-full flex items-center justify-center text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                                title={`Remove "${name}"`}
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -309,7 +382,15 @@ export default function SettingsPage() {
                 </Button>
                 {newCatName.trim() && (
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    Preview: <CategoryBadge category={newCatName.trim()} />
+                    Preview:
+                    <span className={cn(
+                      "inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider border",
+                      COLOR_PALETTE[newCatColor].bg,
+                      COLOR_PALETTE[newCatColor].text,
+                      COLOR_PALETTE[newCatColor].border,
+                    )}>
+                      {newCatName.trim()}
+                    </span>
                   </div>
                 )}
               </div>

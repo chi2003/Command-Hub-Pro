@@ -59,7 +59,7 @@ export default function CommandsPage() {
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Commands</h1>
           <p className="text-muted-foreground mt-1">Manage your individual Windows commands.</p>
         </div>
-        <Button onClick={handleAdd} className="rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover-elevate px-6">
+        <Button onClick={handleAdd} className="rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover-elevate px-6 flex items-center justify-center">
           <Plus className="w-5 h-5 mr-2" /> New Command
         </Button>
       </div>
@@ -125,7 +125,7 @@ export default function CommandsPage() {
                 <div className="flex items-center justify-between pt-4 border-t border-border/30 mt-auto relative z-10 gap-3">
                   <CategoryBadge category={cmd.category} />
                   <Button size="sm" onClick={e => { e.stopPropagation(); handleRun(cmd); }}
-                    className="rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-colors shrink-0">
+                    className="rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-colors shrink-0 flex items-center justify-center">
                     <Play className="w-4 h-4 mr-1.5" /> Run
                   </Button>
                 </div>
