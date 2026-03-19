@@ -1,0 +1,40 @@
+<Page x:Class="CmdManager.Views.ChainsPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      Background="Transparent" Title="Command Chains">
+  <Grid Margin="24">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+
+    <Grid Grid.Row="0" Margin="0,0,0,20">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="Auto"/>
+      </Grid.ColumnDefinitions>
+      <StackPanel>
+        <TextBlock Text="Command Chains" FontSize="26" FontWeight="Bold" Foreground="{StaticResource TextBrush}"/>
+        <TextBlock Text="Multi-step workflows for sequential command execution." FontSize="13" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0"/>
+      </StackPanel>
+      <Button Grid.Column="1" Content="+ New Chain" Style="{StaticResource PrimaryButton}"
+              VerticalAlignment="Center" Click="AddChain_Click"/>
+    </Grid>
+
+    <Grid Grid.Row="1" Margin="0,0,0,16">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="160"/>
+      </Grid.ColumnDefinitions>
+      <TextBox x:Name="SearchBox" Style="{StaticResource SearchBox}"
+               TextChanged="Search_Changed" Margin="0,0,8,0"/>
+      <ComboBox x:Name="CategoryFilter" Grid.Column="1" Style="{StaticResource StyledComboBox}"
+                SelectionChanged="Category_Changed"/>
+    </Grid>
+
+    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+      <WrapPanel x:Name="ChainList" Orientation="Horizontal"/>
+    </ScrollViewer>
+  </Grid>
+</Page>

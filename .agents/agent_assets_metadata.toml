@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "F2Z888cUGsc2NlS-b4ju-"
+uri = "file://CmdManager-WPF-CSharp.tar.gz"
+type = "unspecified"
+title = "CMD Manager — WPF C# Project"

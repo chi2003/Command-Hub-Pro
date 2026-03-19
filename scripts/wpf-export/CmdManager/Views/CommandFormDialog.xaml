@@ -1,0 +1,59 @@
+<Window x:Class="CmdManager.Views.CommandFormDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Command" Width="520" Height="480"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        Background="{StaticResource BackgroundBrush}"
+        Foreground="{StaticResource TextBrush}">
+  <Grid Margin="24">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+
+    <TextBlock x:Name="TitleLabel" Grid.Row="0" FontSize="18" FontWeight="Bold"
+               Foreground="{StaticResource TextBrush}" Margin="0,0,0,16"/>
+
+    <StackPanel Grid.Row="1">
+      <TextBlock Text="Name *" FontSize="12" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,4"/>
+      <TextBox x:Name="NameBox" Style="{StaticResource SearchBox}" Margin="0,0,0,12"/>
+
+      <TextBlock Text="Command *" FontSize="12" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,4"/>
+      <TextBox x:Name="CommandBox" Style="{StaticResource SearchBox}" FontFamily="Consolas" Margin="0,0,0,12"
+               AcceptsReturn="True" Height="60" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
+
+      <TextBlock Text="Description" FontSize="12" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,4"/>
+      <TextBox x:Name="DescBox" Style="{StaticResource SearchBox}" Margin="0,0,0,12"
+               AcceptsReturn="True" Height="60" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
+
+      <Grid Margin="0,0,0,12">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="12"/>
+          <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <StackPanel Grid.Column="0">
+          <TextBlock Text="Category" FontSize="12" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,4"/>
+          <TextBox x:Name="CategoryBox" Style="{StaticResource SearchBox}"/>
+        </StackPanel>
+        <StackPanel Grid.Column="2">
+          <TextBlock Text="Shell" FontSize="12" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,4"/>
+          <ComboBox x:Name="ShellBox" Style="{StaticResource StyledComboBox}">
+            <ComboBoxItem Content="both"/>
+            <ComboBoxItem Content="cmd"/>
+            <ComboBoxItem Content="powershell"/>
+          </ComboBox>
+        </StackPanel>
+      </Grid>
+
+      <CheckBox x:Name="AdminBox" Content="Requires Administrator Privileges"
+                Foreground="{StaticResource TextBrush}" FontSize="13"/>
+    </StackPanel>
+
+    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+      <Button Content="Save" Style="{StaticResource PrimaryButton}" Click="Save_Click" Margin="0,0,8,0"/>
+      <Button Content="Cancel" Style="{StaticResource GhostButton}" Click="Cancel_Click"/>
+    </StackPanel>
+  </Grid>
+</Window>

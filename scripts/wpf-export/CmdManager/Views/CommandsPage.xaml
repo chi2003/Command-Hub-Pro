@@ -1,0 +1,49 @@
+<Page x:Class="CmdManager.Views.CommandsPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      Background="Transparent" Title="Commands">
+  <Grid Margin="24">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+
+    <!-- Header -->
+    <Grid Grid.Row="0" Margin="0,0,0,20">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="Auto"/>
+      </Grid.ColumnDefinitions>
+      <StackPanel>
+        <TextBlock Text="Commands" FontSize="26" FontWeight="Bold"
+                   Foreground="{StaticResource TextBrush}"/>
+        <TextBlock Text="Manage your individual Windows commands."
+                   FontSize="13" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0"/>
+      </StackPanel>
+      <Button Grid.Column="1" Content="+ New Command" Style="{StaticResource PrimaryButton}"
+              VerticalAlignment="Center" Click="AddCommand_Click"/>
+    </Grid>
+
+    <!-- Search + Filter -->
+    <Grid Grid.Row="1" Margin="0,0,0,16">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="160"/>
+      </Grid.ColumnDefinitions>
+      <TextBox x:Name="SearchBox" Style="{StaticResource SearchBox}"
+               TextChanged="Search_Changed" Margin="0,0,8,0">
+        <TextBox.Resources>
+          <Style TargetType="Border" BasedOn="{StaticResource {x:Type Border}}"/>
+        </TextBox.Resources>
+      </TextBox>
+      <ComboBox x:Name="CategoryFilter" Grid.Column="1" Style="{StaticResource StyledComboBox}"
+                SelectionChanged="Category_Changed"/>
+    </Grid>
+
+    <!-- List -->
+    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+      <WrapPanel x:Name="CommandList" Orientation="Horizontal"/>
+    </ScrollViewer>
+  </Grid>
+</Page>

@@ -1,0 +1,79 @@
+<Window x:Class="CmdManager.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="CMD Manager" Height="780" Width="1280" MinHeight="600" MinWidth="900"
+        Background="{StaticResource BackgroundBrush}"
+        Foreground="{StaticResource TextBrush}"
+        WindowStartupLocation="CenterScreen">
+  <Grid>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="220"/>
+      <ColumnDefinition Width="*"/>
+    </Grid.ColumnDefinitions>
+
+    <!-- Sidebar -->
+    <Border Grid.Column="0" Background="{StaticResource SurfaceBrush}"
+            BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,1,0">
+      <Grid>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="*"/>
+          <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Logo -->
+        <StackPanel Grid.Row="0" Margin="16,20,16,16">
+          <TextBlock Text="CMD Manager" FontSize="17" FontWeight="Bold"
+                     Foreground="{StaticResource PrimaryBrush}" Margin="4,0,0,4"/>
+          <TextBlock Text="Windows Command Library" FontSize="11"
+                     Foreground="{StaticResource MutedTextBrush}" Margin="4,0,0,0"/>
+        </StackPanel>
+
+        <!-- Nav -->
+        <StackPanel Grid.Row="1" Margin="8,0">
+          <TextBlock Text="LIBRARY" FontSize="10" FontWeight="SemiBold" Margin="12,8,0,4"
+                     Foreground="{StaticResource MutedTextBrush}" LetterSpacing="1"/>
+          <Button x:Name="NavCommands" Style="{StaticResource NavButton}"
+                  Click="NavCommands_Click">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <TextBlock Text="⌨" FontSize="14"/>
+              <TextBlock Text="Commands" VerticalAlignment="Center"/>
+            </StackPanel>
+          </Button>
+          <Button x:Name="NavChains" Style="{StaticResource NavButton}"
+                  Click="NavChains_Click">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <TextBlock Text="⛓" FontSize="14"/>
+              <TextBlock Text="Command Chains" VerticalAlignment="Center"/>
+            </StackPanel>
+          </Button>
+          <Button x:Name="NavRegistry" Style="{StaticResource NavButton}"
+                  Click="NavRegistry_Click">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <TextBlock Text="🗄" FontSize="14"/>
+              <TextBlock Text="Registry Manager" VerticalAlignment="Center"/>
+            </StackPanel>
+          </Button>
+
+          <TextBlock Text="MANAGEMENT" FontSize="10" FontWeight="SemiBold" Margin="12,16,0,4"
+                     Foreground="{StaticResource MutedTextBrush}"/>
+          <Button x:Name="NavGroups" Style="{StaticResource NavButton}"
+                  Click="NavGroups_Click">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <TextBlock Text="📁" FontSize="14"/>
+              <TextBlock Text="Groups" VerticalAlignment="Center"/>
+            </StackPanel>
+          </Button>
+        </StackPanel>
+
+        <!-- Reset data -->
+        <Button Grid.Row="2" Content="Reset Demo Data" Margin="12,0,12,16"
+                Style="{StaticResource GhostButton}" Click="ResetData_Click"/>
+      </Grid>
+    </Border>
+
+    <!-- Content area -->
+    <Frame x:Name="ContentFrame" Grid.Column="1" NavigationUIVisibility="Hidden"
+           Background="Transparent"/>
+  </Grid>
+</Window>

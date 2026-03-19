@@ -1,0 +1,50 @@
+<Page x:Class="CmdManager.Views.RegistryPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      Background="Transparent" Title="Registry Manager">
+  <Grid Margin="24">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+
+    <Grid Grid.Row="0" Margin="0,0,0,20">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="Auto"/>
+      </Grid.ColumnDefinitions>
+      <StackPanel>
+        <TextBlock Text="🗄 Registry Manager" FontSize="26" FontWeight="Bold" Foreground="{StaticResource OrangeBrush}"/>
+        <TextBlock Text="Windows Registry commands using reg.exe." FontSize="13" Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0"/>
+      </StackPanel>
+      <Button Grid.Column="1" Content="+ New Registry Command" Style="{StaticResource OrangeButton}"
+              VerticalAlignment="Center" Click="Add_Click"/>
+    </Grid>
+
+    <Grid Grid.Row="1" Margin="0,0,0,8">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="160"/>
+      </Grid.ColumnDefinitions>
+      <TextBox x:Name="SearchBox" Style="{StaticResource SearchBox}"
+               TextChanged="Search_Changed" Margin="0,0,8,0"/>
+      <ComboBox x:Name="CategoryFilter" Grid.Column="1" Style="{StaticResource StyledComboBox}"
+                SelectionChanged="Category_Changed"/>
+    </Grid>
+
+    <!-- Warning -->
+    <Border Grid.Row="2" Background="#22F97316" BorderBrush="#44F97316" BorderThickness="1"
+            CornerRadius="8" Padding="12,8" Margin="0,0,0,16">
+      <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#FFF97316">
+        <Run FontWeight="Bold">Warning:</Run>
+        <Run> Registry modifications can affect system stability. Always back up your registry before applying changes.</Run>
+      </TextBlock>
+    </Border>
+
+    <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto">
+      <WrapPanel x:Name="RegistryList" Orientation="Horizontal"/>
+    </ScrollViewer>
+  </Grid>
+</Page>
