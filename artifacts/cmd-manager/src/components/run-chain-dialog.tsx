@@ -73,18 +73,18 @@ export function RunChainDialog({ chain, open, onOpenChange }: RunChainDialogProp
                 const isLast = index === lastIndex;
                 return (
                   <div key={step.id} className="relative">
-                    <div className={`absolute -left-[25px] top-1 w-6 h-6 rounded-full bg-background border-2 flex items-center justify-center shadow-sm z-10 ${isLast ? 'border-accent/60 shadow-accent/20' : 'border-primary shadow-primary/20'}`}>
-                      <span className={`text-[10px] font-bold ${isLast ? 'text-accent' : 'text-primary'}`}>{index + 1}</span>
+                    <div className={`absolute -left-[25px] top-0 w-6 h-6 rounded-full bg-background border-2 flex items-center justify-center shadow-sm z-10 ${isLast ? 'border-blue-500/60 shadow-blue-500/20' : 'border-primary shadow-primary/20'}`}>
+                      <span className={`text-[10px] font-bold ${isLast ? 'text-blue-400' : 'text-primary'}`}>{index + 1}</span>
                     </div>
 
-                    <h4 className="text-sm font-semibold text-foreground mb-3">{step.prefix}</h4>
+                    <h4 className="text-sm font-semibold text-foreground mb-3 ml-4">{step.prefix}</h4>
 
                     <div className="relative group">
                       <div className="bg-[#0D1117] rounded-xl border border-gray-800 overflow-hidden">
                         <div className="flex justify-between items-center px-4 py-2 bg-gray-900 border-b border-gray-800">
                           <span className="text-xs font-mono text-gray-400">
                             {chain.shell === "powershell" ? "PowerShell" : "Command Prompt"}
-                            {isLast && <span className="ml-2 text-accent/80 text-[11px]">— auto-copied to clipboard</span>}
+                            {isLast && <span className="ml-2 text-blue-400/80 text-[11px]">— auto-copied to clipboard</span>}
                           </span>
                           <button
                             onClick={() => handleCopySingle(step.command, step.id)}

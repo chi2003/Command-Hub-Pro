@@ -21,7 +21,8 @@ function downloadBlob(blob: Blob, filename: string) {
 
 function commandsToCsv(commands: AppData["commands"]) {
   return Papa.unparse(commands.map(c => ({
-    id: c.id, name: c.name, description: c.description, command: c.command, requiresAdmin: c.requiresAdmin,
+    id: c.id, name: c.name, description: c.description, command: c.command,
+    requiresAdmin: c.requiresAdmin, category: c.category, shell: c.shell,
   })));
 }
 
@@ -29,10 +30,10 @@ function chainsToCsv(chains: AppData["chains"]) {
   const rows: Record<string, string>[] = [];
   for (const chain of chains) {
     if (chain.steps.length === 0) {
-      rows.push({ chain_id: chain.id, chain_name: chain.name, chain_description: chain.description, step_index: "0", step_prefix: "", step_command: "" });
+      rows.push({ chain_id: chain.id, chain_name: chain.name, chain_description: chain.description, chain_category: chain.category, chain_shell: chain.shell, step_index: "0", step_prefix: "", step_command: "" });
     } else {
       chain.steps.forEach((step, i) => {
-        rows.push({ chain_id: chain.id, chain_name: chain.name, chain_description: chain.description, step_index: String(i), step_prefix: step.prefix, step_command: step.command });
+        rows.push({ chain_id: chain.id, chain_name: chain.name, chain_description: chain.description, chain_category: chain.category, chain_shell: chain.shell, step_index: String(i), step_prefix: step.prefix, step_command: step.command });
       });
     }
   }
@@ -165,6 +166,7 @@ export default function SettingsPage() {
               const newCommands = rows.filter(r => r.name && r.command).map(r => ({
                 id: r.id || uuidv4(), name: r.name, description: r.description || "", command: r.command,
                 requiresAdmin: r.requiresAdmin === "true" || r.requiresAdmin === "1",
+                category: r.category || "system", shell: r.shell || "cmd",
               }));
               setStoreData({ ...currentData, registryCommands: [...(currentData.registryCommands || []), ...newCommands] });
               await queryClient.invalidateQueries();

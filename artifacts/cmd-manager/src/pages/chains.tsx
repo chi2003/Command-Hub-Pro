@@ -100,12 +100,12 @@ export default function ChainsPage() {
             {filteredChains.map((chain) => (
               <motion.div layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.2 }}
                 key={chain.id} onClick={() => handleDetail(chain)}
-                className="group bg-card rounded-2xl p-6 border border-border/50 shadow-sm hover:shadow-md hover:border-border transition-all duration-300 flex flex-col relative overflow-hidden cursor-pointer"
+                className="group bg-card rounded-2xl p-6 border border-border/50 shadow-sm hover:shadow-md hover:border-border transition-all duration-300 flex flex-col h-full relative overflow-hidden cursor-pointer"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
                 <div className="flex justify-between items-start mb-3 relative z-10">
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
                     <ShellIcon shell={chain.shell} />
                     <div>
                       <h3 className="font-semibold text-lg line-clamp-1">{highlightMatch(chain.name, search)}</h3>
