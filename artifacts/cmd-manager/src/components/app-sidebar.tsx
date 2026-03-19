@@ -1,5 +1,5 @@
 import { 
-  Terminal, Layers, Settings, Moon, Sun, Laptop, DatabaseZap,
+  Terminal, Layers, Settings, Moon, Sun, Laptop, DatabaseZap, FolderKanban,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import {
@@ -9,15 +9,38 @@ import {
 import { useTheme } from "./theme-provider";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
 
-const navItems = [
-  { title: "Commands", href: "/", icon: Terminal, iconClass: "" },
-  { title: "Command Chains", href: "/chains", icon: Layers, iconClass: "" },
-  { title: "Registry Manager", href: "/registry", icon: DatabaseZap, iconClass: "text-orange-400" },
+type NavItem = {
+  title: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  accent?: "orange";
+};
+
+const navItems: NavItem[] = [
+  { title: "Commands",         href: "/",         icon: Terminal },
+  { title: "Command Chains",   href: "/chains",   icon: Layers },
+  { title: "Registry Manager", href: "/registry", icon: DatabaseZap, accent: "orange" },
 ];
 
 export function AppSidebar() {
   const [location] = useLocation();
   const { setTheme, theme } = useTheme();
+
+  const getButtonClass = (href: string, accent?: "orange") => {
+    const isActive = location === href;
+    if (isActive) {
+      return accent === "orange"
+        ? "my-1 px-4 py-3 rounded-xl bg-orange-400/10 text-orange-400 font-medium shadow-sm transition-all duration-200"
+        : "my-1 px-4 py-3 rounded-xl bg-primary/10 text-primary font-medium shadow-sm transition-all duration-200";
+    }
+    return "my-1 px-4 py-3 rounded-xl hover:bg-secondary text-muted-foreground hover:text-foreground hover-elevate transition-all duration-200";
+  };
+
+  const getIconClass = (href: string, accent?: "orange") => {
+    const isActive = location === href;
+    if (isActive) return accent === "orange" ? "w-5 h-5 text-orange-400" : "w-5 h-5 text-primary";
+    return "w-5 h-5";
+  };
 
   return (
     <Sidebar className="border-r border-border/50 glass">
@@ -35,27 +58,20 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => {
-                const isActive = location === item.href;
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive}
-                      className={`my-1 px-4 py-3 rounded-xl transition-all duration-200 ${
-                        isActive
-                          ? 'bg-primary/10 text-primary font-medium shadow-sm'
-                          : 'hover:bg-secondary text-muted-foreground hover:text-foreground hover-elevate'
-                      }`}
-                    >
-                      <Link href={item.href} className="flex items-center gap-3 w-full">
-                        <item.icon className={`w-5 h-5 ${isActive ? 'text-primary' : item.iconClass}`} />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
+              {navItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={location === item.href}
+                    className={getButtonClass(item.href, item.accent)}
+                  >
+                    <Link href={item.href} className="flex items-center gap-3 w-full">
+                      <item.icon className={getIconClass(item.href, item.accent)} />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -66,15 +82,23 @@ export function AppSidebar() {
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
+                  isActive={location === '/groups'}
+                  className={getButtonClass('/groups')}
+                >
+                  <Link href="/groups" className="flex items-center gap-3 w-full">
+                    <FolderKanban className={getIconClass('/groups')} />
+                    <span>Groups</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
                   isActive={location === '/settings'}
-                  className={`my-1 px-4 py-3 rounded-xl transition-all duration-200 ${
-                    location === '/settings'
-                      ? 'bg-primary/10 text-primary font-medium'
-                      : 'hover:bg-secondary text-muted-foreground hover:text-foreground hover-elevate'
-                  }`}
+                  className={getButtonClass('/settings')}
                 >
                   <Link href="/settings" className="flex items-center gap-3 w-full">
-                    <Settings className={`w-5 h-5 ${location === '/settings' ? 'text-primary' : ''}`} />
+                    <Settings className={getIconClass('/settings')} />
                     <span>Settings</span>
                   </Link>
                 </SidebarMenuButton>

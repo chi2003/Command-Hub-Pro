@@ -25,11 +25,21 @@ export type CommandChain = {
   shell: string;
 };
 
+export type Group = {
+  id: string;
+  name: string;
+  description: string;
+  commandIds: string[];
+  chainIds: string[];
+  registryIds: string[];
+};
+
 export type AppData = {
   version: number;
   commands: Command[];
   chains: CommandChain[];
   registryCommands: Command[];
+  groups: Group[];
 };
 
 const STORAGE_KEY = 'cmd-manager-data';
@@ -121,6 +131,7 @@ const DEMO_DATA: AppData = {
       shell: "cmd"
     }
   ],
+  groups: [],
   registryCommands: [
     { id: uuidv4(), name: "List Startup (HKLM)", command: "reg query HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", description: "List all programs set to auto-start for all users via the HKLM Run registry key.", requiresAdmin: false, category: "system", shell: "cmd" },
     { id: uuidv4(), name: "List Startup (HKCU)", command: "reg query HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", description: "List all programs set to auto-start for the current user via the HKCU Run registry key.", requiresAdmin: false, category: "system", shell: "cmd" },
@@ -147,6 +158,7 @@ export const getStoreData = (): AppData => {
       const parsed = JSON.parse(stored) as AppData;
       if (parsed.version === DATA_VERSION) {
         if (!parsed.registryCommands) parsed.registryCommands = DEMO_DATA.registryCommands;
+        if (!parsed.groups) parsed.groups = [];
         return parsed;
       }
     } catch (e) {

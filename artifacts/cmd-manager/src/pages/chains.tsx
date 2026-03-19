@@ -3,7 +3,7 @@ import { useChains, useDeleteChain } from "@/hooks/use-chains";
 import { CommandChain } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, MoreVertical, Edit2, Trash2, Play, Loader2, ListOrdered, Pencil } from "lucide-react";
+import { Plus, Search, MoreVertical, Edit2, Trash2, Play, Loader2, ListOrdered } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -94,11 +94,6 @@ export default function ChainsPage() {
                       <h3 className="font-semibold text-lg line-clamp-1">{chain.name}</h3>
                       <div className="flex items-center text-xs text-muted-foreground mt-0.5 gap-2">
                         <span className="flex items-center gap-1"><ListOrdered className="w-3 h-3" /> {chain.steps.length} Steps</span>
-                        {chain.steps.length > 1 && (
-                          <span className="flex items-center gap-1 text-amber-400/70">
-                            <Pencil className="w-3 h-3" /> Last step pastes
-                          </span>
-                        )}
                       </div>
                     </div>
                   </div>
