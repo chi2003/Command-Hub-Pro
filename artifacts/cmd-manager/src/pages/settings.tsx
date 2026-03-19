@@ -557,8 +557,8 @@ export default function SettingsPage() {
 
         {/* Groups */}
         <Card className="glass rounded-2xl border-border/50 shadow-sm overflow-hidden">
-          <div className="bg-indigo-500/5 p-6 border-b border-border/50 flex items-center gap-4">
-            <div className="p-3 bg-indigo-500/20 text-indigo-400 rounded-xl">
+          <div className="bg-purple-500/5 p-6 border-b border-border/50 flex items-center gap-4">
+            <div className="p-3 bg-purple-500/20 text-purple-400 rounded-xl">
               <FolderKanban className="w-6 h-6" />
             </div>
             <div>
@@ -574,14 +574,14 @@ export default function SettingsPage() {
                 <Download className="w-4 h-4" /> Export
               </h3>
               <Button onClick={handleExportGroupsCsv} variant="outline" className="w-full justify-start h-12 rounded-xl text-left border-border/50 hover:bg-secondary hover:text-foreground">
-                <FileSpreadsheet className="w-5 h-5 mr-3 text-indigo-400" />
+                <FileSpreadsheet className="w-5 h-5 mr-3 text-purple-400" />
                 <div className="flex flex-col items-start leading-tight">
                   <span>Export Groups to CSV</span>
                   <span className="text-[10px] text-muted-foreground">Groups with pipe-separated item IDs</span>
                 </div>
               </Button>
               <Button onClick={handleExportGroupsJson} variant="outline" className="w-full justify-start h-12 rounded-xl text-left border-border/50 hover:bg-secondary hover:text-foreground">
-                <FileJson className="w-5 h-5 mr-3 text-indigo-400" />
+                <FileJson className="w-5 h-5 mr-3 text-purple-400" />
                 <div className="flex flex-col items-start leading-tight">
                   <span>Export Groups to JSON</span>
                   <span className="text-[10px] text-muted-foreground">Groups as a JSON array</span>

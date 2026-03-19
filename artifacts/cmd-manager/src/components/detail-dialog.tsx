@@ -4,10 +4,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Command } from "@/lib/store";
-import { ShieldAlert, Copy, Check, Edit2, Play, Trash2 } from "lucide-react";
+import { Copy, Check, Edit2, Play, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { CategoryBadge } from "@/components/category-badge";
 import { ShellIcon } from "@/components/shell-icon";
@@ -49,11 +48,6 @@ export function DetailDialog({ command, open, onOpenChange, onEdit, onRun, onDel
               <DialogTitle className="text-xl leading-tight">{command.name}</DialogTitle>
               <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                 <CategoryBadge category={command.category} />
-                {command.requiresAdmin && (
-                  <Badge variant="outline" className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 gap-1 rounded-lg px-2 py-0.5 text-xs">
-                    <ShieldAlert className="w-3 h-3" /> Requires Administrator
-                  </Badge>
-                )}
               </div>
             </div>
           </div>
@@ -81,12 +75,6 @@ export function DetailDialog({ command, open, onOpenChange, onEdit, onRun, onDel
                 {command.command}
               </pre>
             </div>
-            {command.requiresAdmin && (
-              <p className="text-xs text-amber-500/80 mt-2 flex items-center gap-1">
-                <ShieldAlert className="w-3 h-3" />
-                Run in an elevated (Administrator) terminal.
-              </p>
-            )}
           </div>
         </div>
 

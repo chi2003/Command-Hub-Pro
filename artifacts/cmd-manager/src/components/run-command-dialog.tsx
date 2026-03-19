@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Command } from "@/lib/store";
-import { Terminal, Copy, ShieldAlert, Check, Monitor } from "lucide-react";
+import { Terminal, Copy, Check, Monitor } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -66,12 +66,6 @@ export function RunCommandDialog({ command, open, onOpenChange }: RunCommandDial
         </DialogHeader>
 
         <div className="mt-2 space-y-4">
-          {command.requiresAdmin && (
-            <div className="flex items-center gap-2 text-sm text-amber-500 bg-amber-500/10 p-3 rounded-lg border border-amber-500/20">
-              <ShieldAlert className="w-5 h-5 shrink-0" />
-              <span><strong>Requires Administrator privileges.</strong> Run the terminal as Administrator before pasting.</span>
-            </div>
-          )}
 
           {/* Shell selector — only when shell is "both" */}
           {command.shell === "both" && (
@@ -135,7 +129,6 @@ export function RunCommandDialog({ command, open, onOpenChange }: RunCommandDial
               {isPS
                 ? "Open PowerShell (search Start Menu for \"PowerShell\"), paste the command, and press Enter."
                 : "Open Command Prompt (Win + R → cmd → Enter), paste the command, and press Enter."}
-              {command.requiresAdmin && " Right-click the terminal icon and choose Run as administrator."}
             </span>
           </div>
 

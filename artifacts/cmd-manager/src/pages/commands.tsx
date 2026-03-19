@@ -3,8 +3,7 @@ import { useCommands, useDeleteCommand } from "@/hooks/use-commands";
 import { Command } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Play, ShieldAlert, Loader2 } from "lucide-react";
+import { Plus, Search, Play, Loader2 } from "lucide-react";
 import { CommandFormDialog } from "@/components/command-form-dialog";
 import { RunCommandDialog } from "@/components/run-command-dialog";
 import { DetailDialog } from "@/components/detail-dialog";
@@ -105,13 +104,6 @@ export default function CommandsPage() {
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
-                {cmd.requiresAdmin && (
-                  <div className="absolute top-3 right-3 z-20">
-                    <Badge variant="outline" className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 gap-1 rounded-lg px-2 py-0.5 text-xs">
-                      <ShieldAlert className="w-3 h-3" /> Admin
-                    </Badge>
-                  </div>
-                )}
 
                 <div className="flex items-center mb-3 relative z-10 gap-3">
                   <ShellIcon shell={cmd.shell} />
