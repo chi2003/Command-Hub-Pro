@@ -381,9 +381,9 @@ export default function SettingsPage() {
             </div>
           </div>
           <CardContent className="p-0">
-            <div className="flex h-[253px]">
+            <div className="flex">
               {/* Left panel — category list + Add button */}
-              <div className="w-1/4 border-r border-border/50 flex flex-col">
+              <div className="w-1/4 border-r border-border/50 flex flex-col max-h-[480px]">
                 <div className="flex-1 overflow-y-auto p-3 space-y-1 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
                   {allCategoryEntries.map(({ name, isBuiltIn, color }) => {
                     const isSelected = editorState?.original === name && !editorState.isNew;
@@ -414,7 +414,7 @@ export default function SettingsPage() {
               </div>
 
               {/* Right panel — editor */}
-              <div className="flex-1 p-6 flex flex-col overflow-y-auto [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
+              <div className="flex-1 p-6 flex flex-col">
                 {!editorState ? (
                   <div className="flex-1 flex flex-col items-center justify-center text-center text-muted-foreground gap-3">
                     <Tag className="w-10 h-10 opacity-20" />
