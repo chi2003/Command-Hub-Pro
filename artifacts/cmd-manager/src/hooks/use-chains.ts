@@ -22,7 +22,6 @@ export function useCreateChain() {
       await delay(400);
       const data = getStoreData();
       
-      // Ensure all steps have IDs
       const stepsWithIds = chainData.steps.map(step => ({
         ...step,
         id: step.id || uuidv4()
@@ -52,7 +51,6 @@ export function useUpdateChain() {
       const data = getStoreData();
       const index = data.chains.findIndex(c => c.id === chain.id);
       if (index !== -1) {
-        // Ensure new steps have IDs
         const stepsWithIds = chain.steps.map(step => ({
           ...step,
           id: step.id || uuidv4()
@@ -78,6 +76,20 @@ export function useDeleteChain() {
       data.chains = data.chains.filter(c => c.id !== id);
       setStoreData(data);
       return id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["chains"] });
+    },
+  });
+}
+
+export function useReorderChains() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (newOrder: CommandChain[]) => {
+      const data = getStoreData();
+      data.chains = newOrder;
+      setStoreData(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["chains"] });

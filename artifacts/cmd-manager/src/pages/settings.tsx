@@ -111,12 +111,27 @@ export default function SettingsPage() {
       setEditorState(null);
       toast({ title: "Category added", description: `"${name}" is now available.` });
     } else if (editorState.isBuiltIn) {
-      const updated = builtinOverrides.filter(o => o.name !== editorState.original);
-      const newOverrides = [...updated, { name: editorState.original, color: editorState.color }];
-      saveBuiltinOverrides(newOverrides);
-      setBuiltinOverrides(newOverrides);
-      setEditorState(null);
-      toast({ title: "Category color updated", description: `"${editorState.original}" color has been saved.` });
+      const trimmedName = editorState.name.trim().toLowerCase().replace(/\s+/g, '-');
+      if (trimmedName && trimmedName !== editorState.original) {
+        const updatedDeleted = [...deletedBuiltins, editorState.original];
+        saveDeletedBuiltinCategories(updatedDeleted);
+        setDeletedBuiltins(updatedDeleted);
+        const updatedOverrides = builtinOverrides.filter(o => o.name !== editorState.original);
+        saveBuiltinOverrides(updatedOverrides);
+        setBuiltinOverrides(updatedOverrides);
+        const updated = [...customCats, { name: trimmedName, color: editorState.color }];
+        saveCustomCategories(updated);
+        setCustomCats(updated);
+        setEditorState(null);
+        toast({ title: "Category updated", description: `Renamed to "${trimmedName}".` });
+      } else {
+        const updated = builtinOverrides.filter(o => o.name !== editorState.original);
+        const newOverrides = [...updated, { name: editorState.original, color: editorState.color }];
+        saveBuiltinOverrides(newOverrides);
+        setBuiltinOverrides(newOverrides);
+        setEditorState(null);
+        toast({ title: "Category color updated", description: `"${editorState.original}" color has been saved.` });
+      }
     } else {
       const trimmed = editorState.name.trim().toLowerCase().replace(/\s+/g, '-');
       if (!trimmed) return;
@@ -366,10 +381,10 @@ export default function SettingsPage() {
             </div>
           </div>
           <CardContent className="p-0">
-            <div className="flex min-h-[380px]">
+            <div className="flex h-[253px]">
               {/* Left panel — category list + Add button */}
               <div className="w-1/4 border-r border-border/50 flex flex-col">
-                <div className="flex-1 overflow-y-auto p-3 space-y-1">
+                <div className="flex-1 overflow-y-auto p-3 space-y-1 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
                   {allCategoryEntries.map(({ name, isBuiltIn, color }) => {
                     const isSelected = editorState?.original === name && !editorState.isNew;
                     return (
@@ -399,7 +414,7 @@ export default function SettingsPage() {
               </div>
 
               {/* Right panel — editor */}
-              <div className="flex-1 p-6 flex flex-col">
+              <div className="flex-1 p-6 flex flex-col overflow-y-auto [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
                 {!editorState ? (
                   <div className="flex-1 flex flex-col items-center justify-center text-center text-muted-foreground gap-3">
                     <Tag className="w-10 h-10 opacity-20" />
@@ -414,21 +429,14 @@ export default function SettingsPage() {
                     {/* Name field */}
                     <div className="space-y-1.5">
                       <p className="text-xs text-muted-foreground">Name</p>
-                      {editorState.isBuiltIn ? (
-                        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-secondary/40 border border-border/40">
-                          <span className="text-sm font-medium">{editorState.original}</span>
-                          <span className="text-xs text-muted-foreground ml-auto">Built-in (name locked)</span>
-                        </div>
-                      ) : (
-                        <Input
-                          placeholder="Category name (e.g. scripting)"
-                          value={editorState.name}
-                          onChange={e => setEditorState(prev => prev ? { ...prev, name: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') } : null)}
-                          onKeyDown={e => { if (e.key === 'Enter') handleEditorSave(); if (e.key === 'Escape') setEditorState(null); }}
-                          className="rounded-xl"
-                          autoFocus={editorState.isNew}
-                        />
-                      )}
+                      <Input
+                        placeholder="Category name (e.g. scripting)"
+                        value={editorState.name}
+                        onChange={e => setEditorState(prev => prev ? { ...prev, name: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') } : null)}
+                        onKeyDown={e => { if (e.key === 'Enter') handleEditorSave(); if (e.key === 'Escape') setEditorState(null); }}
+                        className="rounded-xl"
+                        autoFocus={editorState.isNew}
+                      />
                     </div>
 
                     {/* Color picker */}

@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getStoreData, setStoreData, Command } from "@/lib/store";
 import { v4 as uuidv4 } from "uuid";
 
-// Simulate network delay for a more realistic feel
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export function useCommands() {
@@ -61,6 +60,20 @@ export function useDeleteCommand() {
       data.commands = data.commands.filter(c => c.id !== id);
       setStoreData(data);
       return id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["commands"] });
+    },
+  });
+}
+
+export function useReorderCommands() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (newOrder: Command[]) => {
+      const data = getStoreData();
+      data.commands = newOrder;
+      setStoreData(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["commands"] });

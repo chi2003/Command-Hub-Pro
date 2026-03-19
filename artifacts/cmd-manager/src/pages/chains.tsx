@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useChains, useDeleteChain } from "@/hooks/use-chains";
+import { useState, useCallback } from "react";
+import { useChains, useDeleteChain, useReorderChains } from "@/hooks/use-chains";
 import { CommandChain } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,23 @@ import { CategoryBadge } from "@/components/category-badge";
 import { CategoryFilter } from "@/components/category-filter";
 import { ShellIcon } from "@/components/shell-icon";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  DndContext,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  rectSortingStrategy,
+  arrayMove,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 function highlightMatch(text: string, query: string) {
   if (!query.trim()) return <>{text}</>;
@@ -27,9 +44,90 @@ function highlightMatch(text: string, query: string) {
   );
 }
 
+function ChainCard({
+  chain,
+  search,
+  onDetail,
+  onRun,
+  isDragOverlay = false,
+}: {
+  chain: CommandChain;
+  search: string;
+  onDetail: (c: CommandChain) => void;
+  onRun: (c: CommandChain) => void;
+  isDragOverlay?: boolean;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: chain.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : undefined,
+    opacity: isDragging ? 0 : 1,
+  };
+
+  if (isDragOverlay) {
+    return (
+      <div className="group bg-card rounded-2xl p-5 border border-primary/40 shadow-2xl flex flex-col h-full relative overflow-hidden cursor-grabbing rotate-1 scale-105">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent pointer-events-none" />
+        <div className="flex items-center mb-3 relative z-10 gap-3">
+          <ShellIcon shell={chain.shell} />
+          <div className="flex-1">
+            <h3 className="font-semibold text-base line-clamp-1">{chain.name}</h3>
+            <div className="flex items-center text-xs text-muted-foreground mt-0.5 gap-1">
+              <ListOrdered className="w-3 h-3" />
+              <span>{chain.steps.length} Steps</span>
+            </div>
+          </div>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4 line-clamp-2 flex-1 relative z-10">{chain.description}</p>
+        <div className="flex items-center justify-between pt-4 border-t border-border/30 mt-auto relative z-10 gap-3">
+          <CategoryBadge category={chain.category} />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <motion.div
+        whileHover={!isDragging ? { y: -3, transition: { duration: 0.15 } } : {}}
+        onClick={() => onDetail(chain)}
+        className="group bg-card rounded-2xl p-5 border border-border/50 shadow-sm hover:shadow-lg hover:border-primary/30 transition-shadow duration-300 flex flex-col h-full relative overflow-hidden cursor-grab active:cursor-grabbing"
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
+        <div className="flex items-center mb-3 relative z-10 gap-3">
+          <ShellIcon shell={chain.shell} />
+          <div className="flex-1">
+            <h3 className="font-semibold text-base line-clamp-1">{highlightMatch(chain.name, search)}</h3>
+            <div className="flex items-center text-xs text-muted-foreground mt-0.5 gap-1">
+              <ListOrdered className="w-3 h-3" />
+              <span>{chain.steps.length} Steps</span>
+            </div>
+          </div>
+        </div>
+
+        <p className="text-sm text-muted-foreground mb-4 line-clamp-2 flex-1 relative z-10">
+          {highlightMatch(chain.description, search)}
+        </p>
+
+        <div className="flex items-center justify-between pt-4 border-t border-border/30 mt-auto relative z-10 gap-3">
+          <CategoryBadge category={chain.category} />
+          <Button onClick={e => { e.stopPropagation(); onRun(chain); }}
+            className="rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-colors shrink-0 flex items-center justify-center" size="sm">
+            <Play className="w-4 h-4 mr-1.5" /> Run Chain
+          </Button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 export default function ChainsPage() {
   const { data: chains = [], isLoading } = useChains();
   const deleteMutation = useDeleteChain();
+  const reorderMutation = useReorderChains();
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [formOpen, setFormOpen] = useState(false);
@@ -38,6 +136,11 @@ export default function ChainsPage() {
   const [runningChain, setRunningChain] = useState<CommandChain | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailChain, setDetailChain] = useState<CommandChain | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
+  );
 
   const filteredChains = chains.filter(c => {
     const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase()) || c.description.toLowerCase().includes(search.toLowerCase());
@@ -47,9 +150,32 @@ export default function ChainsPage() {
 
   const handleAdd = () => { setEditingChain(null); setFormOpen(true); };
   const handleEdit = (chain: CommandChain) => { setEditingChain(chain); setFormOpen(true); };
-  const handleRun = (chain: CommandChain) => { setRunningChain(chain); setRunOpen(true); };
-  const handleDetail = (chain: CommandChain) => { setDetailChain(chain); setDetailOpen(true); };
+  const handleRun = useCallback((chain: CommandChain) => { setRunningChain(chain); setRunOpen(true); }, []);
+  const handleDetail = useCallback((chain: CommandChain) => { setDetailChain(chain); setDetailOpen(true); }, []);
   const handleDelete = async (id: string) => { await deleteMutation.mutateAsync(id); };
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    setActiveId(null);
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const filteredIds = filteredChains.map(c => c.id);
+    const oldIndex = filteredIds.indexOf(active.id as string);
+    const newIndex = filteredIds.indexOf(over.id as string);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const newFiltered = arrayMove(filteredChains, oldIndex, newIndex);
+    const filteredIdSet = new Set(filteredIds);
+    let fi = 0;
+    const newFull = chains.map(c => filteredIdSet.has(c.id) ? newFiltered[fi++] : c);
+    reorderMutation.mutate(newFull);
+  };
+
+  const activeChain = activeId ? chains.find(c => c.id === activeId) : null;
 
   return (
     <div className="h-full flex flex-col p-6 lg:p-8 max-w-7xl mx-auto w-full">
@@ -88,48 +214,47 @@ export default function ChainsPage() {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 auto-rows-max">
-          <AnimatePresence>
-            {filteredChains.map((chain) => (
-              <motion.div
-                layout
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                whileHover={{ y: -3, transition: { duration: 0.15 } }}
-                transition={{ duration: 0.2 }}
-                key={chain.id}
-                onClick={() => handleDetail(chain)}
-                className="group bg-card rounded-2xl p-5 border border-border/50 shadow-sm hover:shadow-lg hover:border-primary/30 transition-shadow duration-300 flex flex-col h-full relative overflow-hidden cursor-pointer"
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-
-                <div className="flex items-center mb-3 relative z-10 gap-3">
-                  <ShellIcon shell={chain.shell} />
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-base line-clamp-1">{highlightMatch(chain.name, search)}</h3>
-                    <div className="flex items-center text-xs text-muted-foreground mt-0.5 gap-1">
-                      <ListOrdered className="w-3 h-3" />
-                      <span>{chain.steps.length} Steps</span>
-                    </div>
-                  </div>
-                </div>
-
-                <p className="text-sm text-muted-foreground mb-4 line-clamp-2 flex-1 relative z-10">
-                  {highlightMatch(chain.description, search)}
-                </p>
-
-                <div className="flex items-center justify-between pt-4 border-t border-border/30 mt-auto relative z-10 gap-3">
-                  <CategoryBadge category={chain.category} />
-                  <Button onClick={e => { e.stopPropagation(); handleRun(chain); }}
-                    className="rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-colors shrink-0 flex items-center justify-center" size="sm">
-                    <Play className="w-4 h-4 mr-1.5" /> Run Chain
-                  </Button>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext items={filteredChains.map(c => c.id)} strategy={rectSortingStrategy}>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 auto-rows-max">
+              <AnimatePresence>
+                {filteredChains.map((chain) => (
+                  <motion.div
+                    key={chain.id}
+                    layout
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <ChainCard
+                      chain={chain}
+                      search={search}
+                      onDetail={handleDetail}
+                      onRun={handleRun}
+                    />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          </SortableContext>
+          <DragOverlay>
+            {activeChain && (
+              <ChainCard
+                chain={activeChain}
+                search=""
+                onDetail={() => {}}
+                onRun={() => {}}
+                isDragOverlay
+              />
+            )}
+          </DragOverlay>
+        </DndContext>
       )}
 
       <ChainFormDialog open={formOpen} onOpenChange={setFormOpen} chain={editingChain} />

@@ -14,7 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CommandChain } from "@/lib/store";
-import { CATEGORIES } from "@/lib/categories";
+import { getAllCategoryNames } from "@/lib/categories";
 import { useCreateChain, useUpdateChain } from "@/hooks/use-chains";
 import { Layers, Save, Loader2, Plus, Trash2, GripVertical, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -51,6 +51,7 @@ type ChainFormDialogProps = {
 export function ChainFormDialog({ chain, open, onOpenChange }: ChainFormDialogProps) {
   const isEditing = !!chain;
   const { toast } = useToast();
+  const allCategories = getAllCategoryNames();
   const createMutation = useCreateChain();
   const updateMutation = useUpdateChain();
   const isPending = createMutation.isPending || updateMutation.isPending;
@@ -149,7 +150,7 @@ export function ChainFormDialog({ chain, open, onOpenChange }: ChainFormDialogPr
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent className="glass rounded-xl border-border/50">
-                            {CATEGORIES.map(cat => (
+                            {allCategories.map(cat => (
                               <SelectItem key={cat} value={cat} className="rounded-lg cursor-pointer capitalize">
                                 {cat.charAt(0).toUpperCase() + cat.slice(1)}
                               </SelectItem>

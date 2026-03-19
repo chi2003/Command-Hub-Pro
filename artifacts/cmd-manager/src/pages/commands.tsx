@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useCommands, useDeleteCommand } from "@/hooks/use-commands";
+import { useState, useCallback } from "react";
+import { useCommands, useDeleteCommand, useReorderCommands } from "@/hooks/use-commands";
 import { Command } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,23 @@ import { CategoryBadge } from "@/components/category-badge";
 import { CategoryFilter } from "@/components/category-filter";
 import { ShellIcon } from "@/components/shell-icon";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  DndContext,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  rectSortingStrategy,
+  arrayMove,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 function highlightMatch(text: string, query: string) {
   if (!query.trim()) return <>{text}</>;
@@ -27,9 +44,78 @@ function highlightMatch(text: string, query: string) {
   );
 }
 
+function CommandCard({
+  cmd,
+  search,
+  onDetail,
+  onRun,
+  isDragOverlay = false,
+}: {
+  cmd: Command;
+  search: string;
+  onDetail: (cmd: Command) => void;
+  onRun: (cmd: Command) => void;
+  isDragOverlay?: boolean;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: cmd.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : undefined,
+    opacity: isDragging ? 0 : 1,
+  };
+
+  if (isDragOverlay) {
+    return (
+      <div className="group bg-card rounded-2xl p-5 border border-primary/40 shadow-2xl flex flex-col h-full relative overflow-hidden cursor-grabbing rotate-1 scale-105">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent pointer-events-none" />
+        <div className="flex items-center mb-3 relative z-10 gap-3">
+          <ShellIcon shell={cmd.shell} />
+          <h3 className="font-semibold text-lg line-clamp-1 flex-1">{cmd.name}</h3>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4 line-clamp-2 flex-1 relative z-10">{cmd.description}</p>
+        <div className="flex items-center justify-between pt-4 border-t border-border/30 mt-auto relative z-10 gap-3">
+          <CategoryBadge category={cmd.category} />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <motion.div
+        whileHover={!isDragging ? { y: -3, transition: { duration: 0.15 } } : {}}
+        onClick={() => onDetail(cmd)}
+        className="group bg-card rounded-2xl p-5 border border-border/50 shadow-sm hover:shadow-lg hover:border-primary/30 transition-shadow duration-300 flex flex-col h-full relative overflow-hidden cursor-grab active:cursor-grabbing"
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
+        <div className="flex items-center mb-3 relative z-10 gap-3">
+          <ShellIcon shell={cmd.shell} />
+          <h3 className="font-semibold text-lg line-clamp-1 flex-1">{highlightMatch(cmd.name, search)}</h3>
+        </div>
+
+        <p className="text-sm text-muted-foreground mb-4 line-clamp-2 flex-1 relative z-10">
+          {highlightMatch(cmd.description, search)}
+        </p>
+
+        <div className="flex items-center justify-between pt-4 border-t border-border/30 mt-auto relative z-10 gap-3">
+          <CategoryBadge category={cmd.category} />
+          <Button size="sm" onClick={e => { e.stopPropagation(); onRun(cmd); }}
+            className="rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-colors shrink-0 flex items-center justify-center">
+            <Play className="w-4 h-4 mr-1.5" /> Run
+          </Button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 export default function CommandsPage() {
   const { data: commands = [], isLoading } = useCommands();
   const deleteMutation = useDeleteCommand();
+  const reorderMutation = useReorderCommands();
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [formOpen, setFormOpen] = useState(false);
@@ -38,6 +124,11 @@ export default function CommandsPage() {
   const [runningCommand, setRunningCommand] = useState<Command | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailCommand, setDetailCommand] = useState<Command | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
+  );
 
   const filteredCommands = commands.filter(c => {
     const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase()) || c.description.toLowerCase().includes(search.toLowerCase());
@@ -47,9 +138,32 @@ export default function CommandsPage() {
 
   const handleAdd = () => { setEditingCommand(null); setFormOpen(true); };
   const handleEdit = (cmd: Command) => { setEditingCommand(cmd); setFormOpen(true); };
-  const handleRun = (cmd: Command) => { setRunningCommand(cmd); setRunOpen(true); };
-  const handleDetail = (cmd: Command) => { setDetailCommand(cmd); setDetailOpen(true); };
+  const handleRun = useCallback((cmd: Command) => { setRunningCommand(cmd); setRunOpen(true); }, []);
+  const handleDetail = useCallback((cmd: Command) => { setDetailCommand(cmd); setDetailOpen(true); }, []);
   const handleDelete = async (id: string) => { await deleteMutation.mutateAsync(id); };
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    setActiveId(null);
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const filteredIds = filteredCommands.map(c => c.id);
+    const oldIndex = filteredIds.indexOf(active.id as string);
+    const newIndex = filteredIds.indexOf(over.id as string);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const newFiltered = arrayMove(filteredCommands, oldIndex, newIndex);
+    const filteredIdSet = new Set(filteredIds);
+    let fi = 0;
+    const newFull = commands.map(c => filteredIdSet.has(c.id) ? newFiltered[fi++] : c);
+    reorderMutation.mutate(newFull);
+  };
+
+  const activeCommand = activeId ? commands.find(c => c.id === activeId) : null;
 
   return (
     <div className="h-full flex flex-col p-6 lg:p-8 max-w-7xl mx-auto w-full">
@@ -88,43 +202,47 @@ export default function CommandsPage() {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 auto-rows-max">
-          <AnimatePresence>
-            {filteredCommands.map((cmd) => (
-              <motion.div
-                layout
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                whileHover={{ y: -3, transition: { duration: 0.15 } }}
-                transition={{ duration: 0.2 }}
-                key={cmd.id}
-                onClick={() => handleDetail(cmd)}
-                className="group bg-card rounded-2xl p-5 border border-border/50 shadow-sm hover:shadow-lg hover:border-primary/30 transition-shadow duration-300 flex flex-col h-full relative overflow-hidden cursor-pointer"
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-
-
-                <div className="flex items-center mb-3 relative z-10 gap-3">
-                  <ShellIcon shell={cmd.shell} />
-                  <h3 className="font-semibold text-lg line-clamp-1 flex-1">{highlightMatch(cmd.name, search)}</h3>
-                </div>
-
-                <p className="text-sm text-muted-foreground mb-4 line-clamp-2 flex-1 relative z-10">
-                  {highlightMatch(cmd.description, search)}
-                </p>
-
-                <div className="flex items-center justify-between pt-4 border-t border-border/30 mt-auto relative z-10 gap-3">
-                  <CategoryBadge category={cmd.category} />
-                  <Button size="sm" onClick={e => { e.stopPropagation(); handleRun(cmd); }}
-                    className="rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-colors shrink-0 flex items-center justify-center">
-                    <Play className="w-4 h-4 mr-1.5" /> Run
-                  </Button>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext items={filteredCommands.map(c => c.id)} strategy={rectSortingStrategy}>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 auto-rows-max">
+              <AnimatePresence>
+                {filteredCommands.map((cmd) => (
+                  <motion.div
+                    key={cmd.id}
+                    layout
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <CommandCard
+                      cmd={cmd}
+                      search={search}
+                      onDetail={handleDetail}
+                      onRun={handleRun}
+                    />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          </SortableContext>
+          <DragOverlay>
+            {activeCommand && (
+              <CommandCard
+                cmd={activeCommand}
+                search=""
+                onDetail={() => {}}
+                onRun={() => {}}
+                isDragOverlay
+              />
+            )}
+          </DragOverlay>
+        </DndContext>
       )}
 
       <CommandFormDialog open={formOpen} onOpenChange={setFormOpen} command={editingCommand} />

@@ -66,3 +66,17 @@ export function useDeleteRegistryCommand() {
     },
   });
 }
+
+export function useReorderRegistryCommands() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (newOrder: Command[]) => {
+      const data = getStoreData();
+      data.registryCommands = newOrder;
+      setStoreData(data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["registry"] });
+    },
+  });
+}

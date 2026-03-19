@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Command } from "@/lib/store";
-import { CATEGORIES } from "@/lib/categories";
+import { getAllCategoryNames } from "@/lib/categories";
 import { useCreateCommand, useUpdateCommand } from "@/hooks/use-commands";
 import { TerminalSquare, Save, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -50,6 +50,7 @@ export function CommandFormDialog({ command, open, onOpenChange, onCreate, onUpd
   const isEditing = !!command;
   const { toast } = useToast();
   const [isPendingOverride, setIsPendingOverride] = useState(false);
+  const allCategories = getAllCategoryNames();
 
   const createMutation = useCreateCommand();
   const updateMutation = useUpdateCommand();
@@ -138,7 +139,7 @@ export function CommandFormDialog({ command, open, onOpenChange, onCreate, onUpd
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent className="glass rounded-xl border-border/50">
-                      {CATEGORIES.map(cat => (
+                      {allCategories.map(cat => (
                         <SelectItem key={cat} value={cat} className="rounded-lg cursor-pointer capitalize">
                           {cat.charAt(0).toUpperCase() + cat.slice(1)}
                         </SelectItem>
