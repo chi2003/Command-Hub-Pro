@@ -4,11 +4,13 @@ import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/c
 import { Input } from "@/components/ui/input";
 import { getStoreData, setStoreData, clearStoreData, AppData } from "@/lib/store";
 import {
-  CATEGORIES, COLOR_PALETTE, PaletteColor, CustomCategory,
-  getCustomCategories, saveCustomCategories, getAllCategoryNames,
+  CATEGORIES, COLOR_PALETTE, PaletteColor, CustomCategory, BuiltinOverride,
+  getCustomCategories, saveCustomCategories,
+  getDeletedBuiltinCategories, saveDeletedBuiltinCategories,
+  getBuiltinOverrides, saveBuiltinOverrides,
 } from "@/lib/categories";
 import { CategoryBadge } from "@/components/category-badge";
-import { Download, Upload, FileJson, FileSpreadsheet, Trash2, Database, DatabaseZap, Tag, Plus, X, Edit2, Check } from "lucide-react";
+import { Download, Upload, FileJson, FileSpreadsheet, Trash2, Database, DatabaseZap, Tag, Plus, X, Edit2, Check, FolderKanban } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Papa from "papaparse";
 import { useQueryClient } from "@tanstack/react-query";
@@ -36,6 +38,17 @@ function commandsToCsv(commands: AppData["commands"]) {
   })));
 }
 
+function groupsToCsv(groups: AppData["groups"]) {
+  return Papa.unparse(groups.map(g => ({
+    id: g.id,
+    name: g.name,
+    description: g.description,
+    command_ids: g.commandIds.join('|'),
+    chain_ids: g.chainIds.join('|'),
+    registry_ids: g.registryIds.join('|'),
+  })));
+}
+
 function chainsToCsv(chains: AppData["chains"]) {
   const rows: Record<string, string>[] = [];
   for (const chain of chains) {
@@ -54,14 +67,18 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const registryFileInputRef = useRef<HTMLInputElement>(null);
+  const groupFileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const [isImporting, setIsImporting] = useState(false);
   const [isImportingRegistry, setIsImportingRegistry] = useState(false);
+  const [isImportingGroups, setIsImportingGroups] = useState(false);
 
   const [customCats, setCustomCats] = useState<CustomCategory[]>(() => getCustomCategories());
+  const [deletedBuiltins, setDeletedBuiltins] = useState<string[]>(() => getDeletedBuiltinCategories());
+  const [builtinOverrides, setBuiltinOverrides] = useState<BuiltinOverride[]>(() => getBuiltinOverrides());
   const [newCatName, setNewCatName] = useState("");
   const [newCatColor, setNewCatColor] = useState<PaletteColor>("blue");
-  const [editingCat, setEditingCat] = useState<{ original: string; name: string; color: PaletteColor } | null>(null);
+  const [editingCat, setEditingCat] = useState<{ original: string; name: string; color: PaletteColor; isBuiltIn: boolean } | null>(null);
 
   const date = new Date().toISOString().split('T')[0];
 
@@ -80,31 +97,107 @@ export default function SettingsPage() {
     toast({ title: "Category added", description: `"${name}" is now available.` });
   };
 
-  const handleDeleteCategory = (name: string) => {
-    const updated = customCats.filter(c => c.name !== name);
-    saveCustomCategories(updated);
-    setCustomCats(updated);
-    toast({ title: "Category removed", description: `"${name}" has been deleted.` });
+  const handleDeleteCategory = (name: string, isBuiltIn: boolean) => {
+    if (isBuiltIn) {
+      const updated = [...deletedBuiltins, name];
+      saveDeletedBuiltinCategories(updated);
+      setDeletedBuiltins(updated);
+    } else {
+      const updated = customCats.filter(c => c.name !== name);
+      saveCustomCategories(updated);
+      setCustomCats(updated);
+    }
+    toast({ title: "Category removed", description: `"${name}" has been hidden.` });
   };
 
-  const handleStartEdit = (cat: CustomCategory) => {
-    setEditingCat({ original: cat.name, name: cat.name, color: cat.color });
+  const handleStartEdit = (name: string, color: PaletteColor, isBuiltIn: boolean) => {
+    setEditingCat({ original: name, name, color, isBuiltIn });
   };
 
   const handleSaveEdit = () => {
     if (!editingCat) return;
-    const trimmed = editingCat.name.trim().toLowerCase().replace(/\s+/g, '-');
-    if (!trimmed) return;
-    const allNames = [...CATEGORIES as readonly string[], ...customCats.filter(c => c.name !== editingCat.original).map(c => c.name)];
-    if (allNames.includes(trimmed)) {
-      toast({ variant: "destructive", title: "Name already used", description: `"${trimmed}" is already a category.` });
-      return;
+
+    if (editingCat.isBuiltIn) {
+      // For built-ins: only change color via override
+      const updated = builtinOverrides.filter(o => o.name !== editingCat.original);
+      const newOverrides = [...updated, { name: editingCat.original, color: editingCat.color }];
+      saveBuiltinOverrides(newOverrides);
+      setBuiltinOverrides(newOverrides);
+      setEditingCat(null);
+      toast({ title: "Category color updated", description: `"${editingCat.original}" color has been saved.` });
+    } else {
+      const trimmed = editingCat.name.trim().toLowerCase().replace(/\s+/g, '-');
+      if (!trimmed) return;
+      const allNames = [
+        ...(CATEGORIES as readonly string[]).filter(n => !deletedBuiltins.includes(n)),
+        ...customCats.filter(c => c.name !== editingCat.original).map(c => c.name),
+      ];
+      if (allNames.includes(trimmed)) {
+        toast({ variant: "destructive", title: "Name already used", description: `"${trimmed}" is already a category.` });
+        return;
+      }
+      const updated = customCats.map(c => c.name === editingCat.original ? { name: trimmed, color: editingCat.color } : c);
+      saveCustomCategories(updated);
+      setCustomCats(updated);
+      setEditingCat(null);
+      toast({ title: "Category updated", description: `"${trimmed}" has been saved.` });
     }
-    const updated = customCats.map(c => c.name === editingCat.original ? { name: trimmed, color: editingCat.color } : c);
-    saveCustomCategories(updated);
-    setCustomCats(updated);
-    setEditingCat(null);
-    toast({ title: "Category updated", description: `"${trimmed}" has been saved.` });
+  };
+
+  const handleExportGroupsCsv = () => {
+    const data = getStoreData();
+    if (!data.groups?.length) { toast({ variant: "destructive", title: "No groups to export" }); return; }
+    downloadBlob(new Blob([groupsToCsv(data.groups)], { type: "text/csv;charset=utf-8;" }), `cmd-manager-groups-${date}.csv`);
+    toast({ title: "Groups CSV Exported" });
+  };
+
+  const handleExportGroupsJson = () => {
+    const data = getStoreData();
+    if (!data.groups?.length) { toast({ variant: "destructive", title: "No groups to export" }); return; }
+    downloadBlob(new Blob([JSON.stringify(data.groups, null, 2)], { type: "application/json" }), `cmd-manager-groups-${date}.json`);
+    toast({ title: "Groups JSON Exported" });
+  };
+
+  const handleGroupFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsImportingGroups(true);
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const content = event.target?.result as string;
+        const currentData = getStoreData();
+        if (file.name.endsWith('.json')) {
+          const parsed = JSON.parse(content);
+          if (Array.isArray(parsed)) {
+            setStoreData({ ...currentData, groups: [...(currentData.groups ?? []), ...parsed] });
+            await queryClient.invalidateQueries();
+            toast({ title: "Groups JSON Imported", description: `Added ${parsed.length} group(s).` });
+          } else throw new Error("Expected JSON array");
+        } else if (file.name.endsWith('.csv')) {
+          Papa.parse(content, {
+            header: true,
+            complete: async (results) => {
+              const rows = results.data as Record<string, string>[];
+              const newGroups = rows.filter(r => r.name).map(r => ({
+                id: r.id || uuidv4(),
+                name: r.name,
+                description: r.description || "",
+                commandIds: r.command_ids ? r.command_ids.split('|').filter(Boolean) : [],
+                chainIds: r.chain_ids ? r.chain_ids.split('|').filter(Boolean) : [],
+                registryIds: r.registry_ids ? r.registry_ids.split('|').filter(Boolean) : [],
+              }));
+              setStoreData({ ...currentData, groups: [...(currentData.groups ?? []), ...newGroups] });
+              await queryClient.invalidateQueries();
+              toast({ title: "Groups CSV Imported", description: `Added ${newGroups.length} group(s).` });
+            },
+            error: (err) => { throw err; }
+          });
+        }
+      } catch { toast({ variant: "destructive", title: "Groups Import Failed", description: "Could not parse file." }); }
+      finally { setIsImportingGroups(false); if (groupFileInputRef.current) groupFileInputRef.current.value = ''; }
+    };
+    reader.readAsText(file);
   };
 
   const handleExportJson = () => {
@@ -250,8 +343,13 @@ export default function SettingsPage() {
 
   const builtInCats = CATEGORIES as readonly string[];
   const allCategoryEntries = [
-    ...builtInCats.map(name => ({ name, isBuiltIn: true })),
-    ...customCats.map(c => ({ name: c.name, isBuiltIn: false })),
+    ...builtInCats
+      .filter(name => !deletedBuiltins.includes(name))
+      .map(name => {
+        const override = builtinOverrides.find(o => o.name === name);
+        return { name, isBuiltIn: true as const, color: (override?.color ?? null) as PaletteColor | null };
+      }),
+    ...customCats.map(c => ({ name: c.name, isBuiltIn: false as const, color: c.color as PaletteColor })),
   ];
 
   return (
@@ -279,20 +377,26 @@ export default function SettingsPage() {
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">All Categories</p>
               <div className="flex flex-wrap gap-2">
-                {allCategoryEntries.map(({ name, isBuiltIn }) => {
+                {allCategoryEntries.map(({ name, isBuiltIn, color }) => {
                   const isEditing = editingCat?.original === name;
+                  const currentColor: PaletteColor = color ?? "blue";
                   return (
                     <div key={name} className="flex items-center gap-1">
                       {isEditing ? (
-                        <div className="flex items-center gap-2 bg-secondary/50 border border-border/60 rounded-xl px-3 py-2">
-                          <Input
-                            value={editingCat.name}
-                            onChange={e => setEditingCat(prev => prev ? { ...prev, name: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') } : null)}
-                            onKeyDown={e => { if (e.key === 'Enter') handleSaveEdit(); if (e.key === 'Escape') setEditingCat(null); }}
-                            className="h-6 text-xs rounded-md px-2 w-28 border-border/50"
-                            autoFocus
-                          />
-                          <div className="flex gap-1">
+                        <div className="flex items-center gap-2 bg-secondary/50 border border-border/60 rounded-xl px-3 py-2 flex-wrap">
+                          {!isBuiltIn && (
+                            <Input
+                              value={editingCat.name}
+                              onChange={e => setEditingCat(prev => prev ? { ...prev, name: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') } : null)}
+                              onKeyDown={e => { if (e.key === 'Enter') handleSaveEdit(); if (e.key === 'Escape') setEditingCat(null); }}
+                              className="h-6 text-xs rounded-md px-2 w-28 border-border/50"
+                              autoFocus
+                            />
+                          )}
+                          {isBuiltIn && (
+                            <span className="text-xs text-muted-foreground font-medium mr-1">{name}</span>
+                          )}
+                          <div className="flex gap-1 flex-wrap">
                             {(Object.entries(COLOR_HEX) as [PaletteColor, string][]).map(([key, hex]) => (
                               <button
                                 key={key}
@@ -321,24 +425,20 @@ export default function SettingsPage() {
                       ) : (
                         <>
                           <CategoryBadge category={name} />
-                          {!isBuiltIn && (
-                            <>
-                              <button
-                                onClick={() => handleStartEdit(customCats.find(c => c.name === name)!)}
-                                className="w-4 h-4 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                                title={`Edit "${name}"`}
-                              >
-                                <Edit2 className="w-2.5 h-2.5" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteCategory(name)}
-                                className="w-4 h-4 rounded-full flex items-center justify-center text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                                title={`Remove "${name}"`}
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            </>
-                          )}
+                          <button
+                            onClick={() => handleStartEdit(name, currentColor, isBuiltIn)}
+                            className="w-4 h-4 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                            title={isBuiltIn ? `Change color for "${name}"` : `Edit "${name}"`}
+                          >
+                            <Edit2 className="w-2.5 h-2.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCategory(name, isBuiltIn)}
+                            className="w-4 h-4 rounded-full flex items-center justify-center text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                            title={`Remove "${name}"`}
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
                         </>
                       )}
                     </div>
@@ -450,6 +550,56 @@ export default function SettingsPage() {
               </Button>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 JSON import overwrites your entire library. CSV auto-detects Commands or Chains by column headers and appends.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Groups */}
+        <Card className="glass rounded-2xl border-border/50 shadow-sm overflow-hidden">
+          <div className="bg-indigo-500/5 p-6 border-b border-border/50 flex items-center gap-4">
+            <div className="p-3 bg-indigo-500/20 text-indigo-400 rounded-xl">
+              <FolderKanban className="w-6 h-6" />
+            </div>
+            <div>
+              <CardTitle className="text-xl">Groups Data</CardTitle>
+              <CardDescription className="text-base mt-1 text-foreground/70">
+                Export or import your command groups. CSV format uses pipe-separated IDs per cell.
+              </CardDescription>
+            </div>
+          </div>
+          <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <h3 className="font-semibold flex items-center gap-2 text-muted-foreground text-sm">
+                <Download className="w-4 h-4" /> Export
+              </h3>
+              <Button onClick={handleExportGroupsCsv} variant="outline" className="w-full justify-start h-12 rounded-xl text-left border-border/50 hover:bg-secondary hover:text-foreground">
+                <FileSpreadsheet className="w-5 h-5 mr-3 text-indigo-400" />
+                <div className="flex flex-col items-start leading-tight">
+                  <span>Export Groups to CSV</span>
+                  <span className="text-[10px] text-muted-foreground">Groups with pipe-separated item IDs</span>
+                </div>
+              </Button>
+              <Button onClick={handleExportGroupsJson} variant="outline" className="w-full justify-start h-12 rounded-xl text-left border-border/50 hover:bg-secondary hover:text-foreground">
+                <FileJson className="w-5 h-5 mr-3 text-indigo-400" />
+                <div className="flex flex-col items-start leading-tight">
+                  <span>Export Groups to JSON</span>
+                  <span className="text-[10px] text-muted-foreground">Groups as a JSON array</span>
+                </div>
+              </Button>
+            </div>
+            <div className="space-y-3">
+              <h3 className="font-semibold flex items-center gap-2 text-muted-foreground text-sm">
+                <Upload className="w-4 h-4" /> Import
+              </h3>
+              <input type="file" accept=".json,.csv" className="hidden" ref={groupFileInputRef} onChange={handleGroupFileChange} />
+              <Button onClick={() => groupFileInputRef.current?.click()} disabled={isImportingGroups}
+                className="w-full h-12 rounded-xl bg-secondary text-foreground hover:bg-secondary/80 border border-border/50">
+                <Upload className="w-5 h-5 mr-2" />
+                {isImportingGroups ? "Importing..." : "Select Groups CSV/JSON"}
+              </Button>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                JSON must be an array of group objects. CSV must have columns: id, name, description, command_ids, chain_ids, registry_ids (pipe-separated). Appends to existing groups.
               </p>
             </div>
           </CardContent>

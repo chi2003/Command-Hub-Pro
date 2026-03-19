@@ -19,8 +19,8 @@ export function ShellIcon({ shell }: ShellIconProps) {
         <div className="absolute inset-0 pointer-events-none" style={{
           background: 'linear-gradient(to bottom right, transparent calc(50% - 0.5px), rgba(255,255,255,0.12) calc(50% - 0.5px), rgba(255,255,255,0.12) calc(50% + 0.5px), transparent calc(50% + 0.5px))'
         }} />
-        <span className="absolute top-[8px] left-[6px] text-[10px] font-extrabold text-gray-300 tracking-tight select-none leading-none z-10">\_</span>
-        <span className="absolute bottom-[7px] right-[5px] text-[10px] font-extrabold text-[#2795d9] tracking-tight select-none leading-none z-10">&gt;_</span>
+        <span className="absolute top-[6px] left-[5px] text-[13px] font-extrabold text-gray-300 tracking-tight select-none leading-none z-10">\_</span>
+        <span className="absolute bottom-[5px] right-[4px] text-[13px] font-extrabold text-[#2795d9] tracking-tight select-none leading-none z-10">&gt;_</span>
       </div>
     );
   }

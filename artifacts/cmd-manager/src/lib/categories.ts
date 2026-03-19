@@ -44,8 +44,13 @@ export const CATEGORY_COLORS: Record<Category, { bg: string; text: string; borde
 };
 
 export type CustomCategory = { name: string; color: PaletteColor };
+export type BuiltinOverride = { name: string; color: PaletteColor };
 
-const CUSTOM_CAT_KEY = 'cmd-manager-custom-categories';
+const CUSTOM_CAT_KEY        = 'cmd-manager-custom-categories';
+const DELETED_BUILTINS_KEY  = 'cmd-manager-deleted-builtins';
+const BUILTIN_OVERRIDES_KEY = 'cmd-manager-builtin-overrides';
+
+/* ---------- Custom categories ---------- */
 
 export function getCustomCategories(): CustomCategory[] {
   try {
@@ -59,15 +64,56 @@ export function saveCustomCategories(cats: CustomCategory[]) {
   localStorage.setItem(CUSTOM_CAT_KEY, JSON.stringify(cats));
 }
 
+/* ---------- Deleted built-in categories ---------- */
+
+export function getDeletedBuiltinCategories(): string[] {
+  try {
+    const stored = localStorage.getItem(DELETED_BUILTINS_KEY);
+    if (stored) return JSON.parse(stored) as string[];
+  } catch {}
+  return [];
+}
+
+export function saveDeletedBuiltinCategories(names: string[]) {
+  localStorage.setItem(DELETED_BUILTINS_KEY, JSON.stringify(names));
+}
+
+/* ---------- Built-in color overrides ---------- */
+
+export function getBuiltinOverrides(): BuiltinOverride[] {
+  try {
+    const stored = localStorage.getItem(BUILTIN_OVERRIDES_KEY);
+    if (stored) return JSON.parse(stored) as BuiltinOverride[];
+  } catch {}
+  return [];
+}
+
+export function saveBuiltinOverrides(overrides: BuiltinOverride[]) {
+  localStorage.setItem(BUILTIN_OVERRIDES_KEY, JSON.stringify(overrides));
+}
+
+/* ---------- Aggregated helpers ---------- */
+
 export function getAllCategoryNames(): string[] {
-  return [...CATEGORIES, ...getCustomCategories().map(c => c.name)];
+  const deleted = getDeletedBuiltinCategories();
+  return [
+    ...(CATEGORIES as readonly string[]).filter(c => !deleted.includes(c)),
+    ...getCustomCategories().map(c => c.name),
+  ];
 }
 
 export function getCategoryStyle(cat?: string): { bg: string; text: string; border: string } {
   const fallback = { bg: "bg-muted/50", text: "text-muted-foreground", border: "border-border/30" };
   if (!cat) return fallback;
+
+  const overrides = getBuiltinOverrides();
+  const override = overrides.find(o => o.name === cat);
+  if (override && override.color in COLOR_PALETTE) return COLOR_PALETTE[override.color];
+
   if (cat in CATEGORY_COLORS) return CATEGORY_COLORS[cat as Category];
+
   const custom = getCustomCategories().find(c => c.name === cat);
   if (custom && custom.color in COLOR_PALETTE) return COLOR_PALETTE[custom.color];
+
   return fallback;
 }
